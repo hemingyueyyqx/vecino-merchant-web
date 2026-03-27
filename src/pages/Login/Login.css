@@ -1,0 +1,130 @@
+/* 全局登录容器样式（保证布局完整） */
+.login-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+}
+
+/* 登录头部样式 */
+.login-header {
+    padding: 0 24px;
+    height: 64px;
+    line-height: 64px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.brand-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.divider {
+    margin: 0 8px;
+    color: #ccc;
+}
+
+.brand-subtitle {
+    font-size: 14px;
+    color: #666;
+}
+
+/* 登录主体区域 */
+.login-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+}
+
+.login-form-wrapper {
+    width: 400px;
+    padding: 24px;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.06);
+}
+.login-tabs {
+    margin-bottom: 24px;
+}
+
+.login-tab-active {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #b8fff0;
+    /* 用主题色代替图片黄色 */
+    display: inline-block;
+}
+/* 登录表单通用样式 */
+.login-form {
+    margin-top: 24px;
+}
+
+.login-links {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+    font-size: 12px;
+}
+.link {
+    color: #1890ff;
+        cursor: pointer;
+        /* 手型光标 */
+        user-select: none;
+        /* 禁止文字选中 */
+}
+
+.link-divider {
+    margin: 0 8px;
+    color: #ccc;
+}
+
+.login-footer {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.register-btn {
+    color: #1890ff;
+    cursor: pointer;
+    /* 手型光标 */
+    user-select: none;
+    /* 禁止文字选中 */
+}
+
+/* ========== 核心颜色样式 ========== */
+/* 1. 登录按钮样式 */
+.login-button {
+    height: 40px;
+    line-height: 40px;
+    background-color: #b8fff0 !important;
+    border-color: #b8fff0 !important;
+    color: #000 !important;
+    /* 按钮文字颜色，可根据需求调整 */
+    font-weight: 500;
+}
+
+/* 登录按钮悬浮样式 */
+.login-button:hover,
+.login-button:focus {
+    background-color: #8cffea !important;
+    border-color: #8cffea !important;
+    color: #000 !important;
+}
+
+/* 2. 复选框样式（若后续启用协议勾选可保留） */
+.ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #b8fff0 !important;
+    border-color: #b8fff0 !important;
+}
