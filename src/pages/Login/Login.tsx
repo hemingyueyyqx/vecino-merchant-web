@@ -65,9 +65,9 @@ const Login = () => {
         // 安全获取值，防止undefined报错
         const hasShop = shopData?.hasShop;
         const shopInfo = shopData?.shopInfo;
-        console.log("是否有店铺",hasShop);
-        console.log("店铺信息", shopInfo);
-        console.log("店铺状态",shopInfo.status);
+        // console.log("是否有店铺",hasShop);
+        // console.log("店铺信息", shopInfo);
+        // console.log("店铺状态",shopInfo.status);
         
         if (!hasShop) {
           // 无店铺 → 跳转入驻申请页
