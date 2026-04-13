@@ -1,0 +1,111 @@
+.apply-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+  }
+  
+  /* 头部样式（复用原有） */
+  .register-header {
+    padding: 0 24px;
+    height: 64px;
+    line-height: 64px;
+    border-bottom: 1px solid #e8e8e8;
+  }
+  
+  .header-left {
+    display: flex;
+    align-items: center;
+  }
+  
+  .brand-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .divider {
+    margin: 0 8px;
+    color: #ccc;
+  }
+  
+  .brand-subtitle {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  /* 入驻表单主体区域 */
+  .apply-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+  }
+  
+  .apply-form-wrapper {
+    width: 600px;
+    padding: 24px;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  /* Tab样式 */
+  .apply-tabs {
+    margin-bottom: 24px;
+  }
+  
+  .apply-tab-active {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    padding-bottom: 8px;
+    border-bottom: 3px solid #b8fff0;
+    display: inline-block;
+  }
+  
+  /* 表单通用样式 */
+  .apply-form {
+    margin-top: 12px;
+  }
+  
+  /* 提交按钮样式 */
+  .apply-button {
+    height: 40px;
+    line-height: 40px;
+    background-color: #b8fff0 !important;
+    border-color: #b8fff0 !important;
+    color: #000 !important;
+    font-weight: 500;
+  }
+  
+  .apply-button:hover,
+  .apply-button:focus {
+    background-color: #8cffea !important;
+    border-color: #8cffea !important;
+    color: #000 !important;
+  }
+  
+  /* AntD组件样式覆盖 */
+  .ant-select-selector {
+    border-radius: 4px !important;
+  }
+  
+  .ant-select-focused .ant-select-selector {
+    border-color: #b8fff0 !important;
+    box-shadow: 0 0 0 2px rgba(184, 255, 240, 0.2) !important;
+  }
+  
+  .ant-input:focus,
+  .ant-input-focused {
+    border-color: #b8fff0 !important;
+    box-shadow: 0 0 0 2px rgba(184, 255, 240, 0.2) !important;
+  }
+  
+  .ant-form-item-label > label {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+  }

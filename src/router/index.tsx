@@ -8,51 +8,69 @@ import Customer from '@/pages/Customer'
 import { RoleGuard } from './guard' // 引入守卫组件
 import { RoleConst } from '@/types/user' // 引入角色常量
 import ResetPassword from '@/pages/ResetPassword'
+import Apply from "@/pages/Apply";
+import WaitApply from '@/pages/WaitApply'
 
 const router = createBrowserRouter([
   {
-    path: '/login',
-    element: <Login />
+    path: "/login",
+    element: <Login />,
   },
   {
-    path: '/register',
-    element: <Register />
+    path: "/register",
+    element: <Register />,
   },
   {
-    path: '/reset-password',
-    element: <ResetPassword />
+    path: "/reset-password",
+    element: <ResetPassword />,
   },
   {
-    path: '/',
+    path: "/",
     element: <App />,
     children: [
-      { path: '', element: <Navigate to="/login" replace /> },
+      { path: "", element: <Navigate to="/login" replace /> },
       {
-        path: 'business',
+        path: "business",
         element: (
           <RoleGuard requiredRole={RoleConst.BUSINESS}>
             <Business />
           </RoleGuard>
-        )
+        ),
       },
       {
-        path: 'admin',
+        path: "admin",
         element: (
           <RoleGuard requiredRole={RoleConst.ADMIN}>
             <Admin />
           </RoleGuard>
-        )
+        ),
       },
       {
-        path: 'customer',
+        path: "customer",
         element: (
           <RoleGuard requiredRole={RoleConst.CUSTOMER}>
             <Customer />
           </RoleGuard>
-        )
-      }
-    ]
-  }
-])
+        ),
+      },
+      {
+        path: "apply",
+        element: (
+          <RoleGuard requiredRole={RoleConst.BUSINESS}>
+            <Apply />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "waitApply",
+        element: (
+          <RoleGuard requiredRole={RoleConst.BUSINESS}>
+            <WaitApply />
+          </RoleGuard>
+        ),
+      },
+    ],
+  },
+]);
 
 export default router

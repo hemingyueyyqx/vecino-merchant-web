@@ -36,11 +36,13 @@ export interface User {
  * 店铺基础信息
  */
 export interface ShopInfo {
-  id?: string; 
+  id?: string;
   // 店铺所属商户ID
   businessId?: string;
   shopName?: string;
   shopType?: string;
+  businessLicense?: string;
+  legalPerson?:string;
   address?: string;
   status?: Status;
 }

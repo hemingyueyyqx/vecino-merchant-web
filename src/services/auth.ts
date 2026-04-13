@@ -1,6 +1,6 @@
 // src/api/auth.ts
 import axios from '@/axios';
-import { type RoleValue, type User } from '@/types/user';
+import { type RoleValue, type ShopInfo, type User } from '@/types/user';
 import { setUserSessionStorage } from './utils';
 
 
@@ -13,13 +13,13 @@ export async function login({ account, password }: User) {
         account,
         password
       });
-      console.log(resp);  
+      // console.log(resp);  
     const us = resp.data.data;
     const token = resp.headers.token;
     const role: RoleValue = resp.headers.role as RoleValue;
-    console.log(",,,," + role);
-    const message = resp.data.message
-    console.log("mmmmmmm" + message);
+    // console.log(",,,," + role);
+    // const message = resp.data.message
+    // console.log("mmmmmmm" + message);
     if (!us || !token || !role) {
       //ElMessage.error('登录失败！' + message)
       throw "登录错误";
@@ -67,7 +67,28 @@ export async function register({ account, role, nickname, password, phone }: Use
       console.error('重置密码接口请求失败:', error);
       throw error;
     }
+}
+// 店铺入驻接口
+export async function applyShop(params: ShopInfo) {
+  try {
+    console.log("applyShop params:", params);
+    const resp = await axios.post("apply", params);
+    const data = resp.data;
+ 
+    if (data.code !== 200) {
+      throw new Error(data.message || "入驻申请提交失败");
+    }
+    return data.code;
+  } catch (error) {
+    console.error("入驻申请接口请求失败:", error);
+    throw error;
   }
+}
+// 查询商家是否有店铺
+export async function findShop() {
+  const res = await axios.get("findShop");
+    return res.data.data;
+}
   
   
   
