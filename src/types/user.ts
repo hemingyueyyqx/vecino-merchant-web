@@ -46,6 +46,22 @@ export interface ShopInfo {
   address?: string;
   status?: Status;
 }
+// 商家及其店铺信息
+export interface MerchantShop {
+  userId: string;
+  shopId: string;
+  nickname: string;
+  shopName: string;
+  account: string;
+  legalPerson: string;
+  phone: string;
+  shopType: string;
+  address: string;
+  businessLicense: string;
+  status: number;
+  updateTime?: string;
+  auditReason?: string;
+}
 
 /**
  * C端收货地址

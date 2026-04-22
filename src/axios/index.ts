@@ -23,9 +23,17 @@ axios.interceptors.request.use(
 );
 // 递归实现反序列化为JS对象
 const parseObject = (data: any) => {
+  // 【关键】如果是 null 直接返回，不处理
+  if (data === null || data === undefined) {
+    return data;
+  }
   let newValue = data;
   //使用 Object.entries(data) 方法将对象 data 转换为一个由键值对组成的数组，然后使用 for...of 循环遍历这个数组。在每次循环中，key 是对象的键，value 是对象的值。
   for (const [key, value] of Object.entries(data)) {
+    // 【关键】如果值是 null，跳过处理
+    if (value === null) {
+      continue;
+    }
     if (value instanceof Array) {
       //如果 value 是一个数组，使用 forEach 方法遍历数组中的每个元素，并递归调用 parseObject 函数处理这些元素。
       value.forEach((d) => {
@@ -55,7 +63,7 @@ const parseObject = (data: any) => {
     }
   }
   return newValue;
-};
+};;
 
 // 响应拦截器
 axios.interceptors.response.use(
