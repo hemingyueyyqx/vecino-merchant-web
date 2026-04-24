@@ -40,11 +40,15 @@ export interface ShopInfo {
   // 店铺所属商户ID
   businessId?: string;
   shopName?: string;
-  shopType?: string;
+  firstCategoty?: string;
+  secondCategory?: string;
   businessLicense?: string;
-  legalPerson?:string;
+  legalPerson?: string;
   address?: string;
   status?: Status;
+  auditReason?: string;
+  createTime?: string; // 创建时间
+  updateTime?: string; // 更新时间
 }
 // 商家及其店铺信息
 export interface MerchantShop {

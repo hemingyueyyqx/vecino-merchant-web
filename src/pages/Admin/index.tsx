@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Layout, Menu, Avatar, Space, Typography } from "antd";
+import { Layout, Menu, Space, Typography,message } from "antd";
 import {
   DashboardOutlined,
   ShopOutlined,
@@ -12,14 +12,35 @@ import {
   TruckOutlined,
   BellOutlined,
 } from "@ant-design/icons";
-import { Link, useLocation, Outlet } from "react-router-dom";
+import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
+import { deleteUserInfo } from "@/services/utils";
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 const Admin: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
+
+  const getUserNickname = (): string => {
+    try {
+      const userStr = sessionStorage.getItem("user");
+      // 你存的是 JSON.stringify(user.nickname)，所以直接解析
+      return userStr ? JSON.parse(userStr) : "管理员用户";
+    } catch {
+      return "管理员用户";
+    }
+  };
+
+  // 商家昵称（从 session 读取）
+  const nickname = getUserNickname();
+  // 退出登录
+  const handleLogout = () => {
+    deleteUserInfo();
+    message.success("退出登录成功");
+    navigate("/login");
+  };
 
   // 侧边栏二级菜单 展开/折叠 受控状态
   const [openKeys, setOpenKeys] = useState<string[]>([]);
@@ -131,16 +152,21 @@ const Admin: React.FC = () => {
         }}
       >
         <Title level={4} style={{ margin: 0 }}>
-          Vecino零售电商商家服务平台-管理后台
+          Vecino零售电商商家服务平台
         </Title>
         <Space size="large">
           <span>平台管理中心</span>
           <Space>
-            <Avatar>李</Avatar>
-            <span>管理员李四</span>
+            {/* <Avatar>{avatarText}</Avatar> */}
+            <span>管理员{nickname}</span>
             <BellOutlined />
           </Space>
-          <span style={{ cursor: "pointer", color: "#1890ff" }}>退出登录</span>
+          <span
+            style={{ cursor: "pointer", color: "#1890ff" }}
+            onClick={handleLogout}
+          >
+            退出登录
+          </span>
         </Space>
       </Header>
 
@@ -168,6 +194,6 @@ const Admin: React.FC = () => {
       </Layout>
     </Layout>
   );
-};
+};;
 
 export default Admin;

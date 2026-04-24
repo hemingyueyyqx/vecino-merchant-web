@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Layout, Menu, Avatar, Space, Typography } from "antd";
+import React, { useState, useEffect } from "react";
+import { Layout, Menu, Space, Typography, message, Spin } from "antd";
 import {
   HomeOutlined,
   ProductOutlined,
@@ -12,22 +12,72 @@ import {
   ShopOutlined,
   BellOutlined,
 } from "@ant-design/icons";
-import { Link, useLocation, Outlet } from "react-router-dom";
+import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
+import { findShop } from "@/services/auth";
+import { deleteUserInfo } from "@/services/utils";
+import type { ShopInfo } from "@/types/user";
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 const Business: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
 
-  // 侧边栏二级菜单 展开/折叠 受控状态
+  // 侧边栏展开状态
   const [openKeys, setOpenKeys] = useState<string[]>([]);
+  // 店铺信息（接口获取）
+  const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // ===================== 核心修改 =====================
+  // 1. 直接从 sessionStorage 读取 商家昵称（你存储的是纯昵称）
+  const getUserNickname = (): string => {
+    try {
+      const userStr = sessionStorage.getItem("user");
+      // 你存的是 JSON.stringify(user.nickname)，所以直接解析
+      return userStr ? JSON.parse(userStr) : "商家用户";
+    } catch  {
+      return "商家用户";
+    }
+  };
+
+  // 商家昵称（从 session 读取）
+  const nickname = getUserNickname();
+  // ====================================================
+
+  // 页面加载：获取店铺信息（仅店铺名，昵称不从接口拿）
+  useEffect(() => {
+    const getShopData = async () => {
+      try {
+        setLoading(true);
+        const res = await findShop();
+        if (res?.shopInfo) {
+          setShopInfo(res.shopInfo);
+        }
+      } catch{
+        message.error("获取店铺信息失败");
+      } finally {
+        setLoading(false);
+      }
+    };
+    getShopData();
+  }, []);
+
+  // 侧边栏展开/折叠
   const handleOpenChange = (keys: string[]) => {
     setOpenKeys(keys);
   };
 
-  // 侧边栏菜单配置
+  // 退出登录
+  const handleLogout = () => {
+    deleteUserInfo();
+    message.success("退出登录成功");
+    navigate("/login");
+  };
+
+  // 菜单配置
   const menuItems = [
     {
       key: "/business/home",
@@ -39,22 +89,10 @@ const Business: React.FC = () => {
       icon: <ProductOutlined />,
       label: "商品管理",
       children: [
-        // {
-        //   key: "/business/goods/spu",
-        //   label: <Link to="/business/goods/spu">SPU管理</Link>,
-        // },
-        // {
-        //   key: "/business/goods/sku",
-        //   label: <Link to="/business/goods/sku">SKU管理</Link>,
-        // },
         {
           key: "/business/goods/status",
           label: <Link to="/business/goods/status">商品列表</Link>,
         },
-        // {
-        //   key: "/business/goods/stock",
-        //   label: <Link to="/business/goods/stock">库存预警</Link>,
-        // },
       ],
     },
     {
@@ -119,7 +157,6 @@ const Business: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      {/* 顶部栏 */}
       <Header
         style={{
           display: "flex",
@@ -132,19 +169,30 @@ const Business: React.FC = () => {
         <Title level={4} style={{ margin: 0 }}>
           Vecino零售电商商家服务平台
         </Title>
-        <Space size="large">
-          <span>XX生鲜便利店</span>
-          <Space>
-            <Avatar>张</Avatar>
-            <span>商家张三</span>
-            <BellOutlined />
+
+        <Spin spinning={loading} size="small">
+          <Space size="large">
+            {/* 店铺名称（接口获取） */}
+            <span>{shopInfo?.shopName || "未设置店铺"}</span>
+            <Space>
+              {/* 头像：session昵称首字 */}
+              {/* <Avatar>{avatarText}</Avatar> */}
+              {/* 昵称：直接从session读取 */}
+              <span>商家{nickname}</span>
+              <BellOutlined />
+            </Space>
+            {/* 退出登录 */}
+            <span
+              style={{ cursor: "pointer", color: "#1890ff" }}
+              onClick={handleLogout}
+            >
+              退出登录
+            </span>
           </Space>
-          <span style={{ cursor: "pointer", color: "#1890ff" }}>退出登录</span>
-        </Space>
+        </Spin>
       </Header>
 
       <Layout>
-        {/* 左侧侧边栏（可折叠二级菜单） */}
         <Sider
           width={220}
           theme="light"
@@ -159,8 +207,6 @@ const Business: React.FC = () => {
             style={{ height: "100%", borderRight: 0 }}
           />
         </Sider>
-
-        {/* 右侧主内容区（无面包屑，直接渲染子路由） */}
         <Content style={{ padding: "24px", background: "#f5f5f5" }}>
           <Outlet />
         </Content>

@@ -13,5 +13,14 @@ import type { RoleValue } from "@/types/user";
   // 设置用户信息
   export function setUserSessionStorage(user: User, role: RoleValue) {
   sessionStorage.setItem("role", role);
-  sessionStorage.setItem("user", JSON.stringify(user));
+  sessionStorage.setItem("user", JSON.stringify(user.nickname));
 };
+// 删除用户信息
+export function deleteUserInfo() {
+  // 删除指定的三个字段
+  sessionStorage.removeItem("role");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("user");
+  // 可选：清空全部（二选一即可）
+  // sessionStorage.clear();
+}
