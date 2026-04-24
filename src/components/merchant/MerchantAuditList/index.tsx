@@ -13,13 +13,15 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EyeOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   getAllMerchantsAndShop,
   auditPass,
   auditReject,
 } from "@/services/business";
-import { type MerchantShop } from "@/types/user";
+// 🔥 导入你抽离的类目配置
+import categoryOptions from "@/services/const";
+import { type MerchantShop, type CategoryItem } from "@/types/user";
 import "./index.css";
 
 const { Title } = Typography;
@@ -32,6 +34,20 @@ const MerchantAuditList = () => {
   const [rejectVisible, setRejectVisible] = useState(false);
   const [form] = Form.useForm();
 
+  // 🔥 核心：递归遍历类目配置，自动生成 value => label 映射（复用配置，无需手动维护）
+  const categoryMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    // 递归遍历函数
+    const traverse = (items: CategoryItem[]) => {
+      items.forEach((item) => {
+        map[item.value] = item.label;
+        if (item.children) traverse(item.children);
+      });
+    };
+    traverse(categoryOptions);
+    return map;
+  }, []);
+
   // 加载列表
   const fetchList = async () => {
     setLoading(true);
@@ -40,7 +56,6 @@ const MerchantAuditList = () => {
     setLoading(false);
   };
 
-  // 修复 eslint 警告
   useEffect(() => {
     const init = async () => {
       await fetchList();
@@ -54,15 +69,12 @@ const MerchantAuditList = () => {
     setDetailVisible(true);
   };
 
-  // 审核通过 —— 传整个 record 对象
+  // 审核通过
   const handlePass = async (record: MerchantShop) => {
-    console.log("对应行表格", record);
-    
     Modal.confirm({
       title: "确认通过",
       content: "确定要通过该商家入驻申请吗？",
       onOk: async () => {
-        // 重写字段：shopId → id
         const submitData = {
           ...record,
           id: record.shopId,
@@ -81,18 +93,16 @@ const MerchantAuditList = () => {
     setRejectVisible(true);
   };
 
-  // 提交驳回 —— 把驳回理由放进对象，整体传给后端
+  // 提交驳回
   const handleRejectOk = async () => {
     const values = await form.validateFields();
     if (!currentRecord) return;
 
     const submitData = {
       ...currentRecord,
-      id: currentRecord.shopId, //  shopId → id
+      id: currentRecord.shopId,
       auditReason: values.auditReason,
     };
-    console.log("对应行表格", submitData);
-
     await auditReject(submitData);
     message.success("已驳回");
     setRejectVisible(false);
@@ -102,19 +112,17 @@ const MerchantAuditList = () => {
   // 表格列
   const columns: ColumnsType<MerchantShop> = [
     { title: "店铺名称", dataIndex: "shopName", width: 170 },
-    // { title: "商家账号", dataIndex: "account", width: 130 },
-    // { title: "联系人", dataIndex: "nickname", width: 100 },
     { title: "法人", dataIndex: "legalPerson", width: 100 },
-    // { title: "电话", dataIndex: "phone", width: 140 },
-
-    // { title: "地址", dataIndex: "address", ellipsis: true, width: 200 },
     { title: "营业执照注册号", dataIndex: "businessLicense", width: 150 },
     {
       title: "店铺类型",
-      dataIndex: "shopType",
-      width: 120,
-      render: (t) =>
-        t === "convenience" ? "便利店" : t === "fresh" ? "生鲜" : t,
+      width: 160,
+      // 表格展示：二级类目 > 一级类目
+      render: (_, record) => {
+        return (
+          categoryMap[record.secondCategory || record.firstCategory] || "未设置"
+        );
+      },
     },
     {
       title: "申请时间",
@@ -214,9 +222,15 @@ const MerchantAuditList = () => {
               <Descriptions.Item label="电话">
                 {currentRecord.phone}
               </Descriptions.Item>
-              <Descriptions.Item label="店铺类型">
-                {currentRecord.shopType === "convenience" ? "便利店" : "生鲜"}
+
+              {/* 🔥 详情页：完整展示 一级+二级类目 */}
+              <Descriptions.Item label="经营类目">
+                {categoryMap[currentRecord.firstCategory]}
+                {currentRecord.secondCategory
+                  ? ` / ${categoryMap[currentRecord.secondCategory]}`
+                  : ""}
               </Descriptions.Item>
+
               <Descriptions.Item label="地址">
                 {currentRecord.address}
               </Descriptions.Item>
@@ -230,11 +244,9 @@ const MerchantAuditList = () => {
                     ? "已驳回"
                     : "待审核"}
               </Descriptions.Item>
-              {
-                <Descriptions.Item label="审核意见">
-                  {currentRecord.auditReason || "暂无"}
-                </Descriptions.Item>
-              }
+              <Descriptions.Item label="审核意见">
+                {currentRecord.auditReason || "暂无"}
+              </Descriptions.Item>
             </Descriptions>
           )}
         </Modal>

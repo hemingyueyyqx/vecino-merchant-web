@@ -43,6 +43,10 @@ const Admin: React.FC = () => {
           key: "/admin/merchant/audit",
           label: <Link to="/admin/merchant/audit">入驻审核</Link>,
         },
+        {
+          key: "/admin/merchant/shop_type",
+          label: <Link to="/admin/merchant/shop_type">经营品类</Link>,
+        },
         // {
         //   key: "/admin/merchant/info",
         //   label: <Link to="/admin/merchant/info">商家列表</Link>,

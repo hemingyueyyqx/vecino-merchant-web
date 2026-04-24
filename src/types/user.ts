@@ -55,7 +55,8 @@ export interface MerchantShop {
   account: string;
   legalPerson: string;
   phone: string;
-  shopType: string;
+  firstCategory: string;
+  secondCategory: string;
   address: string;
   businessLicense: string;
   status: number;
@@ -79,3 +80,8 @@ export interface Address {
  * 订单配送状态(后续移到订单模块)
  */
 export type DeliveryStatus = 'pending' | 'delivering' | 'completed' | 'canceled';
+export interface CategoryItem {
+  value: string;
+  label: string;
+  children?: CategoryItem[];
+}

@@ -13,6 +13,7 @@ import WaitApply from "@/pages/WaitApply";
 import PagePlaceholder from "@/components/PagePlaceholder";
 import MerchantAuditList from "@/components/merchant/MerchantAuditList"
 import GoodsList from "@/components/merchant/GoodsList";
+import SelectList from "@/components/ShopCategorySelect"
 
 const router = createHashRouter([
   {
@@ -47,7 +48,7 @@ const router = createHashRouter([
           },
           {
             path: "goods/status",
-            element: <GoodsList/>,
+            element: <GoodsList />,
           },
           {
             path: "goods/stock",
@@ -106,6 +107,10 @@ const router = createHashRouter([
           {
             path: "merchant/level",
             element: <PagePlaceholder title="商家管理 - 商家分级管控" />,
+          },
+          {
+            path: "merchant/shop_type",
+            element: <SelectList />,
           },
           {
             path: "category/maintain",

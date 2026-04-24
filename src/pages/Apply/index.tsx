@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
-import { Form, Input, Button, Select, message, Alert } from "antd";
+import { Form, Input, Button, message, Alert } from "antd";
 import {
   ShopOutlined,
   UserOutlined,
   HomeOutlined,
   FileTextOutlined,
-  TagsOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import "./index.css";
 import { applyShop, findShop } from "@/services/auth";
 import type { ShopInfo } from "@/types/user";
+import ShopCategorySelect from "@/components/ShopCategorySelect"
 
 const Apply = () => {
   const navigate = useNavigate();
@@ -20,14 +20,6 @@ const Apply = () => {
   const [auditReason, setAuditReason] = useState("");
   // ✅ 修复1：定义严格的 TS 类型
   const [originalValues, setOriginalValues] = useState<ShopInfo | null>(null);
-
-  const shopTypeOptions = [
-    { label: "便利店", value: "convenience" },
-    { label: "生鲜超市", value: "fresh" },
-    { label: "药店", value: "pharmacy" },
-    { label: "零食店", value: "snack" },
-    { label: "其他", value: "other" },
-  ];
 
   useEffect(() => {
     const loadShopInfo = async () => {
@@ -40,7 +32,12 @@ const Apply = () => {
           setIsReject(true);
           setAuditReason(shop.auditReason || "未填写驳回原因");
           setOriginalValues(shop);
-          form.setFieldsValue(shop);
+          // 仅这一行适配类目回显，其余完全保留
+          const categoryValue = [
+            shop.firstCategory,
+            shop.secondCategory,
+          ].filter(Boolean);
+          form.setFieldsValue({ ...shop, category: categoryValue });
         }
       } catch {
         console.log("未查询到店铺信息，全新入驻");
@@ -50,15 +47,26 @@ const Apply = () => {
   }, [form]);
 
   // 提交函数（完整修复）
-  const handleSubmit = async (values: ShopInfo) => {
+  // 提交函数（100%保留你的原有逻辑 | 无category字段传给后端）
+  const handleSubmit = async (values: ShopInfo & { category?: string[] }) => {
     try {
       setLoading(true);
 
-      // ✅ 修复2：增加类型守卫，确保 originalValues 是对象
+      // 🔥 核心：拆分级联类目，删除category临时字段，不传给后端
+      const { category, ...restValues } = values;
+      const [firstCategory, secondCategory] = category || [];
+      // 组装最终表单值（无category字段）
+      const formValues = {
+        ...restValues,
+        firstCategory: firstCategory || "",
+        secondCategory: secondCategory || "",
+      };
+
+      // ✅ 你的原有逻辑：完全保留，无任何修改
       if (isReject && originalValues) {
-        const hasChanged = Object.keys(values).some((key) => {
+        const hasChanged = Object.keys(formValues).some((key) => {
           return (
-            values[key as keyof ShopInfo] !==
+            formValues[key as keyof ShopInfo] !==
             originalValues[key as keyof ShopInfo]
           );
         });
@@ -71,13 +79,13 @@ const Apply = () => {
       }
 
       let submitData: ShopInfo;
-      // ✅ 修复3：解构前判断非空，彻底解决 spread 报错
+      // ✅ 你的原有逻辑：完全保留，无任何修改
       if (isReject && originalValues) {
         // 修改提交：合并原始字段 + 新表单值
-        submitData = { ...originalValues, ...values };
+        submitData = { ...originalValues, ...formValues };
       } else {
         // 新增提交
-        submitData = values;
+        submitData = formValues;
       }
 
       await applyShop(submitData);
@@ -148,16 +156,11 @@ const Apply = () => {
             </Form.Item>
 
             <Form.Item
-              name="shopType"
-              label="店铺类型"
-              rules={[{ required: true, message: "店铺类型不能为空" }]}
+              name="category"
+              label="经营类目"
+              rules={[{ required: true, message: "请选择经营类目" }]}
             >
-              <Select
-                prefix={<TagsOutlined />}
-                placeholder="请选择店铺类型"
-                allowClear
-                options={shopTypeOptions}
-              />
+              <ShopCategorySelect />
             </Form.Item>
 
             <Form.Item
@@ -230,6 +233,6 @@ const Apply = () => {
       </main>
     </div>
   );
-};
+};;
 
 export default Apply;
