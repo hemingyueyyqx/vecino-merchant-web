@@ -12,8 +12,10 @@ import Apply from "@/pages/Apply";
 import WaitApply from "@/pages/WaitApply";
 import PagePlaceholder from "@/components/PagePlaceholder";
 import MerchantAuditList from "@/components/merchant/MerchantAuditList"
-import GoodsList from "@/components/merchant/GoodsList";
-import SelectList from "@/components/ShopCategorySelect"
+import ProductList from "@/components/merchant/ProductList";
+import SelectList from "@/components/ShopCategorySelect";
+import CategoryAudit from "@/components/admin/CategoryAudit";
+import CategoryManage from "@/components/admin/CategoryManage";
 
 const router = createHashRouter([
   {
@@ -38,17 +40,17 @@ const router = createHashRouter([
             path: "home",
             element: <PagePlaceholder title="商家首页 - 数据概览" />,
           },
-          {
-            path: "goods/spu",
-            element: <PagePlaceholder title="商品管理 - SPU管理" />,
-          },
-          {
-            path: "goods/sku",
-            element: <PagePlaceholder title="商品管理 - SKU管理" />,
-          },
+          // {
+          //   path: "goods/spu",
+          //   element: <PagePlaceholder title="商品管理 - SPU管理" />,
+          // },
+          // {
+          //   path: "goods/sku",
+          //   element: <PagePlaceholder title="商品管理 - SKU管理" />,
+          // },
           {
             path: "goods/status",
-            element: <GoodsList />,
+            element: <ProductList />,
           },
           {
             path: "goods/stock",
@@ -114,11 +116,11 @@ const router = createHashRouter([
           },
           {
             path: "category/maintain",
-            element: <PagePlaceholder title="商品类目管理 - 类目体系维护" />,
+            element: <CategoryManage/>,
           },
           {
             path: "category/audit",
-            element: <PagePlaceholder title="商品类目管理 - 类目审核" />,
+            element: <CategoryAudit/>,
           },
           {
             path: "activity/platform",

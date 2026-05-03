@@ -1,5 +1,6 @@
 import axios from "@/axios";
 import type { MerchantShop } from "@/types/user";
+import type { MerchantSpuParams, PageResult, ProductSpu, ProductSku } from "@/types/product";
 
 /**
  * 获取所有商家用户列表
@@ -38,3 +39,30 @@ export async function auditPass(data:MerchantShop) {
   export async function auditReject(data:MerchantShop) {
     return axios.put(`shop/audit/reject`, data);
   }
+
+
+
+// 1. 获取商品列表（async/await）
+export const getSpuList = async (params: MerchantSpuParams): Promise<PageResult<ProductSpu>> => {
+  return await axios.get('business/spu/list', { params });
+};
+
+// 2. 商品批量上下架
+export const batchUpdateSpuStatus = async (data: { spuIds: string[]; status: 0 | 1 }): Promise<void> => {
+  await axios.put('business/spu/batch/status', data);
+};
+
+// 3. 删除商品
+export const deleteSpu = async (id: string): Promise<void> => {
+  await axios.delete(`business/spu/delete?id=${id}`);
+};
+
+// 4. 查询SKU列表
+export const getSkuList = async (spuId: string): Promise<ProductSku[]> => {
+  return await axios.get(`business/sku/list?spuId=${spuId}`);
+};
+
+// 5. 修改库存预警
+export const updateWarnStock = async (data: { skuId: string; warnStock: number }): Promise<void> => {
+  await axios.put('business/sku/stock/warn', data);
+};
