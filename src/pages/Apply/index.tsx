@@ -113,7 +113,7 @@ const Apply = () => {
       <main className="apply-main">
         <div className="apply-form-wrapper">
           <div className="apply-tabs">
-            <div className="apply-tab-active">商户入驻申请</div>
+            <div className="apply-tab-active">商家入驻申请</div>
           </div>
 
           {isReject && (

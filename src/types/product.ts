@@ -17,33 +17,32 @@ export interface ProductCategory {
  * 2. 商品SPU表 product_spu
  */
 export interface ProductSpu {
-  id: string;
-  shopId: string;
-  spuName: string;
-  categoryId: string;
-  mainImage: string;
-  detail: string;
-  auditStatus: 0 | 1 | 2;
+  spuId?: string;
+  shopId?: string;
+  spuName?: string;
+  mainImage?: string;
+  detail?: string;
+  auditStatus?: 0 | 1 | 2;
   auditRemark?: string;
-  status: 0 | 1;
-  createTime: string;
-  updateTime: string;
-  categoryName?: string;
+  spuStatus?: 0 | 1;
+  createTime?: string;
+  skuList?: ProductSku[];
+  shopName?: string; // 新增 店铺名称
 }
 
 /**
  * 3. 商品SKU表 product_sku
  */
 export interface ProductSku {
-  id: string;
-  spuId: string;
-  specAttr: string;
-  price: number;
-  stockNum: number;
-  warnStock: number;
-  status: 0 | 1;
-  createTime: string;
-  updateTime: string;
+  id?: string;
+  spuId?: string;
+  specAttr?: string;
+  price?: number;
+  stockNum?: number;
+  warnStock?: number;
+  status?: 0 | 1;
+  createTime?: string;
+  updateTime?: string;
 }
 
 /**

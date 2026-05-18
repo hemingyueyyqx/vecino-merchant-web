@@ -104,18 +104,18 @@ const Business: React.FC = () => {
           key: "/business/order/list",
           label: <Link to="/business/order/list">订单列表</Link>,
         },
-        {
-          key: "/business/order/exception",
-          label: <Link to="/business/order/exception">异常订单处理</Link>,
-        },
-        {
-          key: "/business/order/export",
-          label: <Link to="/business/order/export">订单导出</Link>,
-        },
-        {
-          key: "/business/order/logistics",
-          label: <Link to="/business/order/logistics">物流追踪</Link>,
-        },
+        // {
+        //   key: "/business/order/exception",
+        //   label: <Link to="/business/order/exception">异常订单处理</Link>,
+        // },
+        // {
+        //   key: "/business/order/export",
+        //   label: <Link to="/business/order/export">订单导出</Link>,
+        // },
+        // {
+        //   key: "/business/order/logistics",
+        //   label: <Link to="/business/order/logistics">物流追踪</Link>,
+        // },
       ],
     },
     {
@@ -131,7 +131,7 @@ const Business: React.FC = () => {
     {
       key: "/business/aftersale",
       icon: <CommentOutlined />,
-      label: <Link to="/business/aftersale">售后&评价管理</Link>,
+      label: <Link to="/business/aftersale">评价管理</Link>,
     },
     {
       key: "/business/report",

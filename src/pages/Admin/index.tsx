@@ -53,7 +53,7 @@ const Admin: React.FC = () => {
     {
       key: "/admin/home",
       icon: <DashboardOutlined />,
-      label: <Link to="/admin/home">平台概览</Link>,
+      label: <Link to="/admin/home">首页</Link>,
     },
     {
       key: "merchant",
@@ -89,7 +89,7 @@ const Admin: React.FC = () => {
         },
         {
           key: "/admin/category/audit",
-          label: <Link to="/admin/category/audit">类目审核</Link>,
+          label: <Link to="/admin/category/audit">SPU审核</Link>,
         },
       ],
     },

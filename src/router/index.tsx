@@ -14,8 +14,15 @@ import PagePlaceholder from "@/components/PagePlaceholder";
 import MerchantAuditList from "@/components/merchant/MerchantAuditList"
 import ProductList from "@/components/merchant/ProductList";
 import SelectList from "@/components/ShopCategorySelect";
-import CategoryAudit from "@/components/admin/CategoryAudit";
+import CategoryAudit from "@/components/admin/SpuAuditList";
 import CategoryManage from "@/components/admin/CategoryManage";
+import OrderList from "@/components/merchant/OrderList";
+import MarketingManagement from "@/components/merchant/MarketingManagement";
+import MerchantDataDashboard from "@/components/merchant/MerchantDataDashboard";
+import PlatformDataDashboard from "@/components/admin/PlatformDataDashboard";
+import ReviewManagement from "@/components/merchant/ReviewManagement";
+import MerchantHome from "@/components/merchant/MerchantHome";
+import AdminHome from "@/components/admin/AdminHome";
 
 const router = createHashRouter([
   {
@@ -38,7 +45,7 @@ const router = createHashRouter([
           { index: true, element: <Navigate to="/business/home" replace /> },
           {
             path: "home",
-            element: <PagePlaceholder title="商家首页 - 数据概览" />,
+            element: <MerchantHome />,
           },
           // {
           //   path: "goods/spu",
@@ -58,7 +65,7 @@ const router = createHashRouter([
           },
           {
             path: "order/list",
-            element: <PagePlaceholder title="订单管理 - 订单列表" />,
+            element: <OrderList />,
           },
           {
             path: "order/exception",
@@ -72,13 +79,13 @@ const router = createHashRouter([
             path: "order/logistics",
             element: <PagePlaceholder title="订单管理 - 物流追踪" />,
           },
-          { path: "marketing", element: <PagePlaceholder title="营销管理" /> },
+          { path: "marketing", element: <MarketingManagement /> },
           { path: "customer", element: <PagePlaceholder title="客户管理" /> },
           {
             path: "aftersale",
-            element: <PagePlaceholder title="售后&评价管理" />,
+            element: <ReviewManagement />,
           },
-          { path: "report", element: <PagePlaceholder title="数据报表" /> },
+          { path: "report", element: <MerchantDataDashboard /> },
           { path: "fund", element: <PagePlaceholder title="资金账户管理" /> },
           { path: "shop", element: <PagePlaceholder title="店铺管理" /> },
           { path: "message", element: <PagePlaceholder title="消息中心" /> },
@@ -96,7 +103,7 @@ const router = createHashRouter([
           { index: true, element: <Navigate to="/admin/home" replace /> },
           {
             path: "home",
-            element: <PagePlaceholder title="平台概览 - 数据总览" />,
+            element: <AdminHome />,
           },
           {
             path: "merchant/audit",
@@ -116,11 +123,11 @@ const router = createHashRouter([
           },
           {
             path: "category/maintain",
-            element: <CategoryManage/>,
+            element: <CategoryManage />,
           },
           {
             path: "category/audit",
-            element: <CategoryAudit/>,
+            element: <CategoryAudit />,
           },
           {
             path: "activity/platform",
@@ -134,7 +141,7 @@ const router = createHashRouter([
             path: "activity/rule",
             element: <PagePlaceholder title="营销活动管理 - 违规营销监控" />,
           },
-          { path: "dashboard", element: <PagePlaceholder title="数据看板" /> },
+          { path: "dashboard", element: <PlatformDataDashboard /> },
           { path: "risk", element: <PagePlaceholder title="风控反欺诈管理" /> },
           {
             path: "workorder",
