@@ -23,8 +23,8 @@ import {
   // deleteSpu,
   addSpu,
   editSpu,
-  updateSpuStatus,
   updateSkuInfo,
+  aiTitleOptimize,
 } from "@/services/business";
 
 // ===================== 商品列表主页面 =====================
@@ -544,6 +544,10 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
 }) => {
   const [form] = Form.useForm();
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiTitles, setAiTitles] = useState<string[]>([]);
+  const [showAiSelector, setShowAiSelector] = useState(false);
+  // const [forceUpdate, setForceUpdate] = useState(0);
+  const [spuNameValue, setSpuNameValue] = useState("");
   const [skuList, setSkuList] = useState<ProductSku[]>([
     {
       specAttr: "",
@@ -553,16 +557,69 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
     },
   ]);
 
+  useEffect(() => {
+    if (!visible) {
+      form.resetFields();
+      setSpuNameValue("");
+      setSkuList([
+        {
+          specAttr: "",
+          price: 0,
+          stockNum: 0,
+          warnStock: 10,
+        },
+      ]);
+      setShowAiSelector(false);
+      setAiTitles([]);
+      // setForceUpdate(0);
+    }
+  }, [visible, form]);
   // AI标题优化模拟
-  const handleAiOptimize = () => {
+  const handleAiOptimize = async () => {
     const name = form.getFieldValue("spuName");
     if (!name) return message.warning("请输入商品名称");
+    setShowAiSelector(false);
+    setAiTitles([]);
     setAiLoading(true);
-    setTimeout(() => {
-      form.setFieldValue("spuName", `${name} 正品保障 品质优选`);
+    try {
+      const titles = await aiTitleOptimize(name);
+      if (titles && titles.length > 0) {
+        setAiTitles(titles);
+        setShowAiSelector(true);
+        message.success(`AI生成了 ${titles.length} 个优化标题，请选择`);
+      } else {
+        message.warning("未生成优化标题");
+      }
+    } catch (err) {
+      console.error("AI标题优化失败", err);
+      message.error("AI标题优化失败");
+    } finally {
       setAiLoading(false);
-      message.success("AI标题优化成功");
-    }, 800);
+    }
+  };
+  const handleSelectAiTitle = (selectedTitle: string) => {
+    // console.log("选中的标题:", selectedTitle);
+    // console.log("当前表单值:", form.getFieldsValue());
+
+    // form.setFieldValue("spuName", selectedTitle);
+    // setForceUpdate((prev) => prev + 1);
+    // setTimeout(() => {
+    //   form.setFieldValue("spuName", selectedTitle);
+    //   console.log("设置后的值:", form.getFieldValue("spuName"));
+    // }, 0);
+    setSpuNameValue(selectedTitle);
+    form.setFieldValue("spuName", selectedTitle);
+    // console.log("设置后的表单值:", form.getFieldsValue());
+    // console.log("spuName字段值:", form.getFieldValue("spuName"));
+
+    setShowAiSelector(false);
+    setAiTitles([]);
+    message.success("已应用选中的AI标题");
+  };
+
+  const handleCancelAiSelector = () => {
+    setShowAiSelector(false);
+    setAiTitles([]);
   };
 
   // 提交新增
@@ -585,15 +642,15 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
       message.success("商品新增成功");
       onSuccess();
       onClose();
-      form.resetFields();
-      setSkuList([
-        {
-          specAttr: "",
-          price: 0,
-          stockNum: 0,
-          warnStock: 10,
-        },
-      ]);
+      // form.resetFields();
+      // setSkuList([
+      //   {
+      //     specAttr: "",
+      //     price: 0,
+      //     stockNum: 0,
+      //     warnStock: 10,
+      //   },
+      // ]);
     } catch (err) {
       message.error("商品新增失败");
     }
@@ -620,13 +677,46 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
           name="spuName"
           rules={[{ required: true, message: "请输入商品名称" }]}
         >
-          <Space.Compact style={{ width: "100%" }}>
-            <Input placeholder="请输入商品名称" />
+          {/* <Space.Compact style={{ width: "100%" }}>
+            <Input placeholder="请输入商品名称"
+            />
             <Button loading={aiLoading} onClick={handleAiOptimize}>
               AI优化标题
             </Button>
-          </Space.Compact>
+          </Space.Compact> */}
+          <div style={{ display: "flex", gap: "8px" }}>
+            <Input
+              value={spuNameValue}
+              onChange={(e) => {
+                setSpuNameValue(e.target.value);
+                form.setFieldValue("spuName", e.target.value);
+              }}
+              placeholder="请输入商品名称"
+              style={{ flex: 1 }}
+            />
+            <Button loading={aiLoading} onClick={handleAiOptimize}>
+              AI优化标题
+            </Button>
+          </div>
         </Form.Item>
+        {showAiSelector && aiTitles.length > 0 && (
+          <Form.Item label="AI优化标题选择">
+            <Space orientation="vertical" style={{ width: "100%" }}>
+              {aiTitles.map((title, index) => (
+                <Button
+                  key={index}
+                  type="default"
+                  block
+                  onClick={() => handleSelectAiTitle(title)}
+                  style={{ textAlign: "left" }}
+                >
+                  {title}
+                </Button>
+              ))}
+              <Button onClick={handleCancelAiSelector}>取消选择</Button>
+            </Space>
+          </Form.Item>
+        )}
         <Form.Item label="商品详情" name="detail">
           <Input.TextArea rows={3} placeholder="请输入商品详情描述" />
         </Form.Item>

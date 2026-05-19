@@ -108,3 +108,9 @@ export const batchAuditSpu = async (data: {
 }) => {
   await axios.put("product/batch/audit", data);
 };
+// ai标题优化
+export const aiTitleOptimize = async (spuName: string) => {
+  const res = await axios.post("optimize-title", spuName);
+  console.log("ai标题优化", res.data.data);
+  return res.data.data;
+};
