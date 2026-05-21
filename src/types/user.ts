@@ -29,6 +29,15 @@ export interface User {
   createTime?: string; // 创建时间
   updateTime?: string; // 更新时间
   role?: RoleValue; // 所有用户的通用角色字段
+  balance?: number;
+}
+export interface UserInfo  {
+  userId?: string;
+  addressId?: string;
+  address?: string;
+  phone?: string;
+  nickname?: string;
+  updateTime?: string;
 }
 
 

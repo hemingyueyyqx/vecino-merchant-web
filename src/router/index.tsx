@@ -23,6 +23,10 @@ import PlatformDataDashboard from "@/components/admin/PlatformDataDashboard";
 import ReviewManagement from "@/components/merchant/ReviewManagement";
 import MerchantHome from "@/components/merchant/MerchantHome";
 import AdminHome from "@/components/admin/AdminHome";
+import ShopListPage from "@/components/customer/ShopListPage";
+import ShopDetailPageWrapper from "@/components/customer/ShopDetailPageWrapper";
+import OrderListPage from "@/components/customer/OrderList";
+import ProfilePage from "@/components/customer/Profile";
 
 const router = createHashRouter([
   {
@@ -161,6 +165,22 @@ const router = createHashRouter([
             <Customer />
           </RoleGuard>
         ),
+        children: [
+          // index: true 表示这是父路由的默认子路由，不需要额外的 path
+          { index: true, element: <ShopListPage /> },
+          {
+            path: "shop/:shopId",
+            element: <ShopDetailPageWrapper />,
+          },
+          {
+            path: "orders",
+            element: <OrderListPage />,
+          },
+          {
+            path: "profile",
+            element: <ProfilePage />,
+          },
+        ],
       },
       {
         path: "apply",

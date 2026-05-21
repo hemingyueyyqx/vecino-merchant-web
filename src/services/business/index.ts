@@ -1,7 +1,6 @@
 import axios from "@/axios";
 import type { MerchantShop } from "@/types/user";
 import type {
-  MerchantSpuParams,
   ProductSpu,
   ProductSku,
 } from "@/types/product";
@@ -28,6 +27,7 @@ export async function getAllMerchantsAndShop() {
     if (res.data.code === 403) {
       throw new Error(res.data.message);
     }
+    console.log("商家列表", res.data.data);
     return res.data.data;
   } catch (error) {
     console.error("获取商家及店铺信息失败：", error);
@@ -45,7 +45,7 @@ export async function auditReject(data: MerchantShop) {
 }
 
 // 1. 获取商品列表（async/await）
-export const getSpuList = async (params: MerchantSpuParams) => {
+export const getSpuList = async (params) => {
   console.log(params);
   const res = await axios.post("product/productInfo", params);
   console.log("商品列表", res.data.data);
