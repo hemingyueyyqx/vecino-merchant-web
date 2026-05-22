@@ -10,10 +10,18 @@ import {
   Popup,
   Image,
 } from "antd-mobile";
-import { CloseOutline } from "antd-mobile-icons";
+import {
+  CloseOutline,
+  UserOutline,
+  PhoneFill,
+  LocationOutline,
+} from "antd-mobile-icons";
 import { getSpuList } from "@/services/business";
 import type { ProductSpu, ProductSku } from "@/types/product";
-import type { MerchantShop } from "@/types/user";
+import type { MerchantShop, UserInfo } from "@/types/user";
+import { getUserInfo } from "@/services/customer";
+import { addOrder, getBalance } from "@/services/customer";
+
 import "./ShopDetailPage.css";
 
 interface ShopDetailPageProps {
@@ -33,12 +41,21 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
   );
   const [selectedSku, setSelectedSku] = useState<ProductSku | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [userLoading, setUserLoading] = useState(false);
+  // 余额信息
+  const [balance, setBalance] = useState<number>(0);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+
+  // 支付确认弹窗
+  const [payConfirmVisible, setPayConfirmVisible] = useState(false);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
 
   // 🔥 修复点1：删除useCallback，直接在useEffect内实现请求逻辑
   useEffect(() => {
     // 定义异步函数
     const loadProducts = async () => {
-      setLoading(true);
+  setLoading(true);
       try {
         const params = {
           shopId: shop.shopId,
@@ -57,7 +74,37 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
     // 执行请求
     loadProducts();
   }, [shop.shopId]); // 仅依赖店铺ID，最稳定
-
+  // 新增：获取用户信息
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      setUserLoading(true);
+      try {
+        const data = await getUserInfo();
+        setUserInfo(data);
+      } catch (err) {
+        console.error("获取用户信息失败", err);
+        Toast.show({ content: "加载用户信息失败", position: "top" });
+      } finally {
+        setUserLoading(false);
+      }
+    };
+    loadUserInfo();
+  }, []);
+  // 获取余额
+  const fetchBalance = async () => {
+    setBalanceLoading(true);
+    try {
+      const data = await getBalance();
+      setBalance(data || 0);
+      return data || 0;
+    } catch (err) {
+      console.error("获取余额失败", err);
+      Toast.show({ content: "获取余额失败", position: "top" });
+      return 0;
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
   // 🔥 修复点2：刷新函数复用请求逻辑
   const onRefresh = async () => {
     setLoading(true);
@@ -87,18 +134,21 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
     setDetailPopupVisible(true);
   };
 
-  const handleConfirmAddToCart = () => {
+  // 确认下单 - 新增余额校验和支付确认
+  const handleConfirmAddToCart = async () => {
+    // 1. 校验规格
     if (!selectedSku) {
       Toast.show({ content: "请选择规格", position: "top" });
       return;
     }
-    // 🔥 新增：验证数量
+
+    // 2. 校验数量
     if (quantity <= 0) {
       Toast.show({ content: "请输入有效的数量", position: "top" });
       return;
     }
 
-    // 🔥 新增：检查库存
+    // 3. 校验库存
     if (quantity > selectedSku.stockNum) {
       Toast.show({
         content: `库存不足，最多可购买 ${selectedSku.stockNum} 件`,
@@ -106,13 +156,70 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
       });
       return;
     }
-    Toast.show({
-      content: `已将 ${selectedProduct?.spuName} 加入购物车`,
-      position: "top",
-    });
-    setSkuPopupVisible(false);
-  };;
 
+    // 4. 计算总金额
+    const amount = (selectedSku.price || 0) * quantity;
+    setTotalAmount(amount);
+
+    // 5. 获取并校验余额
+    const currentBalance = await fetchBalance();
+    if (currentBalance < amount) {
+      Toast.show({
+        content: `余额不足，当前余额 ¥${currentBalance.toFixed(2)}，需要 ¥${amount.toFixed(2)}`,
+        position: "top",
+      });
+      return;
+    }
+
+    // 6. 显示支付确认弹窗
+    setPayConfirmVisible(true);
+  };
+  // 确认支付
+  const handleConfirmPay = async () => {
+    if (!selectedProduct || !selectedSku || !userInfo) return;
+
+    try {
+      // 构建订单参数
+      const orderParams = {
+        shopId: shop.shopId,
+        shopName: shop.shopName,
+        spuId: selectedProduct.spuId,
+        spuName: selectedProduct.spuName,
+        mainImage: selectedProduct.mainImage,
+        skuId: selectedSku.id,
+        specAttr: selectedSku.specAttr,
+        price: selectedSku.price,
+        quantity: quantity,
+        totalAmount: totalAmount,
+        address: userInfo.address,
+      };
+
+      // 调用下单接口
+      await addOrder(orderParams);
+
+      Toast.show({ content: "下单成功", icon: "success", position: "top" });
+
+      // 关闭弹窗
+      setPayConfirmVisible(false);
+      setSkuPopupVisible(false);
+      setSelectedSku(null);
+      setQuantity(1);
+
+      // 刷新余额
+      await fetchBalance();
+      // 刷新订单列表
+      onRefresh();
+      // 刷新购物车
+    } catch (err) {
+      console.error("下单失败", err);
+      Toast.show({ content: "下单失败，请重试", position: "top" });
+    }
+  };
+
+  // 取消支付
+  const handleCancelPay = () => {
+    setPayConfirmVisible(false);
+  };
   const handleBack = () => {
     if (onBack) {
       onBack();
@@ -185,7 +292,7 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
         onMaskClick={() => {
           setSelectedSku(null);
           setQuantity(1);
-          setSkuPopupVisible(false)
+          setSkuPopupVisible(false);
         }}
         bodyStyle={{
           borderTopLeftRadius: "8px",
@@ -200,10 +307,43 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
               onClick={() => {
                 setSelectedSku(null);
                 setQuantity(1);
-                setSkuPopupVisible(false)
+                setSkuPopupVisible(false);
               }}
               style={{ fontSize: 20, cursor: "pointer" }}
             />
+          </div>
+          <div className="user-info-section">
+            <div className="section-title">
+              <UserOutline style={{ marginRight: 8 }} />
+              收货信息
+            </div>
+            {userLoading ? (
+              <div className="loading-text">加载中...</div>
+            ) : userInfo ? (
+              <div className="user-info-content">
+                <div className="user-info-item">
+                  <UserOutline className="info-icon" />
+                  <span className="info-label">昵称:</span>
+                  <span className="info-value">
+                    {userInfo.nickname || "--"}
+                  </span>
+                </div>
+                <div className="user-info-item">
+                  <PhoneFill className="info-icon" />
+                  <span className="info-label">手机号:</span>
+                  <span className="info-value">{userInfo.phone || "--"}</span>
+                </div>
+                <div className="user-info-item">
+                  <LocationOutline className="info-icon" />
+                  <span className="info-label">地址:</span>
+                  <span className="info-value">
+                    {userInfo.address || "请添加收货地址"}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="empty-user-info">未获取到用户信息</div>
+            )}
           </div>
 
           {selectedProduct && (
@@ -286,12 +426,62 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
                       </span>
                     ) : (
                       "确认下单"
-                    )}
+                    )
+                  }
                 />
-                  
               </div>
             </>
           )}
+        </div>
+      </Popup>
+      {/* 支付确认弹窗 */}
+      <Popup
+        visible={payConfirmVisible}
+        onMaskClick={handleCancelPay}
+        bodyStyle={{
+          borderTopLeftRadius: "16px",
+          borderTopRightRadius: "16px",
+          padding: "24px",
+          minHeight: "30vh",
+        }}
+      >
+        <div className="pay-confirm-content">
+          <div className="pay-confirm-title">确认支付</div>
+
+          <div className="pay-confirm-amount">
+            <span className="amount-label">订单金额</span>
+            <span className="amount-value">¥{totalAmount.toFixed(2)}</span>
+          </div>
+
+          <div className="pay-confirm-balance">
+            <span className="balance-label">当前余额</span>
+            <span className="balance-value">¥{balance.toFixed(2)}</span>
+          </div>
+
+          <div className="pay-confirm-tip">
+            确认支付后，将从您的账户余额中扣除相应金额
+          </div>
+
+          <div className="pay-confirm-actions">
+            <Button
+              block
+              fill="outline"
+              size="large"
+              onClick={handleCancelPay}
+              className="cancel-btn"
+            >
+              取消
+            </Button>
+            <Button
+              block
+              color="primary"
+              size="large"
+              onClick={handleConfirmPay}
+              className="confirm-btn"
+            >
+              确认支付 ¥{totalAmount.toFixed(2)}
+            </Button>
+          </div>
         </div>
       </Popup>
 
@@ -300,7 +490,7 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
         visible={detailPopupVisible}
         position="bottom"
         onMaskClick={() => {
-          setDetailPopupVisible(false)
+          setDetailPopupVisible(false);
         }}
         bodyStyle={{
           borderTopLeftRadius: "8px",

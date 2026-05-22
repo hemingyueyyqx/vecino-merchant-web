@@ -24,6 +24,8 @@ import {
   updateAddress,
 } from "@/services/customer";
 import type { UserInfo } from "@/types/user";
+import { deleteUserInfo } from "@/services/utils";
+
 import "./index.css";
 
 function ProfilePage() {
@@ -79,6 +81,12 @@ function ProfilePage() {
     // 执行初始化
     initPageData();
   }, []);
+  const handleLogout = () => {
+    deleteUserInfo();
+    Toast.show({ content: "退出成功", icon: "success" });
+    // 跳转到登录页面（根据你的路由配置调整）
+    window.location.href = "/login";
+  };
 
   const handleRecharge = async () => {
     const amount = parseFloat(rechargeAmount);
@@ -227,6 +235,15 @@ function ProfilePage() {
             </List.Item>
           </List>
         </Card>
+        <Button
+          block
+          color="danger"
+          size="large"
+          onClick={handleLogout}
+          className="logout-button"
+        >
+            <span>退出登录</span>
+        </Button>
       </div>
 
       <Popup

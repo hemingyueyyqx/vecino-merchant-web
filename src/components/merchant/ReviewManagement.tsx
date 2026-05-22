@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   Tag,
@@ -21,43 +21,26 @@ import {
   RobotOutlined,
   EyeOutlined,
   CheckCircleOutlined,
+  ShakeOutlined,
 } from "@ant-design/icons";
 import type { TableProps } from "antd";
+import {
+  getReviewDetail,
+  aiReviewAnalysis,
+  replyReview,
+} from "@/services/business";
+import type { Review } from "@/types/order";
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 const { TextArea } = Input;
 
 // 评价等级类型
 export type ReviewLevel = "good" | "medium" | "bad";
 
 // 评价数据类型定义
-export interface ReviewItem {
+export interface ReviewItem extends Review {
   key: string;
-  userName: string;
-  userAvatar: string;
-  content: string;
-  images: string[];
-  level: ReviewLevel;
-  createTime: string;
-  replyContent: string | null;
-  replyTime: string | null;
-  badKeywords?: string[]; // 差评关键词
-  suggest?: string; // AI改进建议
 }
-
-// AI回复模板生成
-const generateAIReply = (level: ReviewLevel, keywords?: string[]): string => {
-  if (level === "good") {
-    return "非常感谢您的好评与认可，我们会继续努力为您提供更优质的商品和服务，期待您的再次光临！";
-  }
-  if (level === "medium") {
-    return "感谢您的评价，我们非常重视您的反馈，会持续优化服务细节，努力为您带来更好的消费体验！";
-  }
-  // 差评针对性回复
-  const keywordText = keywords?.join("、") || "服务";
-  return `非常抱歉给您带来了不好的体验，关于您反馈的${keywordText}问题我们高度重视，已立刻整改优化。感谢您的监督，我们会努力提升服务质量，期待再次为您服务！`;
-};
 
 const ReviewManagement: React.FC = () => {
   // 表单实例
@@ -68,107 +51,164 @@ const ReviewManagement: React.FC = () => {
   const [searchText, setSearchText] = useState<string>("");
   const [replyModal, setReplyModal] = useState<boolean>(false);
   const [currentReview, setCurrentReview] = useState<ReviewItem | null>(null);
+  const [reviewList, setReviewList] = useState<ReviewItem[]>([]);
+  const [analysis, setAnalysis] = useState<{
+    text?: string;
+  }>({});
+  const [aiLoading, setAiLoading] = useState(false);
 
-  // 模拟评价数据
-  const [reviewList, setReviewList] = useState<ReviewItem[]>([
-    {
-      key: "1",
-      userName: "阳光明媚",
-      userAvatar: "https://picsum.photos/id/64/40/40",
-      content: "商品新鲜度很高，配送速度特别快，包装完好，非常满意！",
-      images: ["https://picsum.photos/id/292/200/200"],
-      level: "good",
-      createTime: "2025-05-20 14:30",
-      replyContent:
-        "非常感谢您的好评与认可，我们会继续努力为您提供更优质的商品和服务！",
-      replyTime: "2025-05-20 15:10",
-    },
-    {
-      key: "2",
-      userName: "小吃货",
-      userAvatar: "https://picsum.photos/id/65/40/40",
-      content: "商品还可以，就是配送时间有点久，希望能改进一下。",
-      images: [],
-      level: "medium",
-      createTime: "2025-05-20 13:20",
-      replyContent: null,
-      replyTime: null,
-    },
-    {
-      key: "3",
-      userName: "消费者小王",
-      userAvatar: "https://picsum.photos/id/66/40/40",
-      content: "商品质量有问题，包装破损，配送超时，服务态度也不好！",
-      images: [
-        "https://picsum.photos/id/429/200/200",
-        "https://picsum.photos/id/430/200/200",
-      ],
-      level: "bad",
-      badKeywords: ["商品质量", "包装破损", "配送超时", "服务态度"],
-      suggest:
-        "1. 加强商品出库质检，杜绝质量问题；2. 优化包装材质，防止破损；3. 提升配送时效，加强骑手管理；4. 强化客服服务意识培训。",
-      createTime: "2025-05-20 10:15",
-      replyContent: null,
-      replyTime: null,
-    },
-  ]);
+  const fetchReviews = async () => {
+    try {
+      const data = await getReviewDetail();
+      const list: ReviewItem[] = Array.isArray(data)
+        ? data.map((item) => ({
+            ...item,
+            key: item.reviewId || item.orderId || item.orderNo || "",
+          }))
+        : [];
+      return list;
+    } catch (err) {
+      console.error("获取评价列表失败", err);
+      message.error("获取评价列表失败");
+      return [];
+    }
+  };
 
-  // 筛选数据
+  // 获取评价列表
+  useEffect(() => {
+    const initData = async () => {
+      const reviews = await fetchReviews();
+      setReviewList(reviews);
+    };
+    initData();
+  }, []);
+
+  // 将 reviewType 转换为 level
+  const getLevelFromType = (reviewType?: number): ReviewLevel => {
+    if (reviewType === 1) return "good";
+    if (reviewType === 2) return "medium";
+    return "bad";
+  };
+
+  // 筛选数据 - 修复后的逻辑
   const filteredList = reviewList.filter((item) => {
-    const matchLevel = filterLevel ? item.level === filterLevel : true;
-    const matchSearch =
-      item.content.includes(searchText) || item.userName.includes(searchText);
+    // 评价类型筛选
+    const hasLevelFilter =
+      typeof filterLevel === "string" && filterLevel !== "";
+    const matchLevel = hasLevelFilter
+      ? getLevelFromType(item.reviewType) === filterLevel
+      : true;
+
+    // 搜索筛选
+    const hasSearchText = searchText && searchText.trim() !== "";
+    const matchSearch = hasSearchText
+      ? item.content?.includes(searchText) ||
+        item.nickname?.includes(searchText)
+      : true;
+
     return matchLevel && matchSearch;
   });
 
   // 打开回复弹窗
   const handleOpenReply = (record: ReviewItem) => {
     setCurrentReview(record);
-    form.setFieldValue(
-      "replyContent",
-      generateAIReply(record.level, record.badKeywords),
-    );
+    setAnalysis({});
+    form.setFieldValue("replyContent", "");
     setReplyModal(true);
+  };
+
+  // 获取AI分析结果与智能回复
+  const handleGetAIResult = async () => {
+    if (!currentReview?.reviewId) return;
+
+    setAiLoading(true);
+    try {
+      const result = await aiReviewAnalysis(currentReview.reviewId);
+      const analysisResult = result["AI分析结果"];
+      const replyResult = result["AI智能回复"];
+
+      if (analysisResult) {
+        setAnalysis({ text: analysisResult });
+      }
+      if (replyResult) {
+        form.setFieldValue("replyContent", replyResult);
+      }
+      message.success("AI分析完成");
+    } catch (err) {
+      console.error("AI分析失败", err);
+      message.error("AI分析失败");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   // 提交回复
   const handleSubmitReply = () => {
     form.validateFields().then((values) => {
       setLoading(true);
-      setTimeout(() => {
-        const newList = reviewList.map((item) => {
-          if (item.key === currentReview?.key) {
-            return {
-              ...item,
-              replyContent: values.replyContent,
-              replyTime: new Date().toLocaleString("zh-CN"),
-            };
-          }
-          return item;
-        });
-        setReviewList(newList);
-        setReplyModal(false);
-        message.success("评价回复成功");
+      if (!currentReview?.reviewId) {
         setLoading(false);
-      }, 800);
+        return;
+      }
+      replyReview(
+        currentReview.reviewId,
+        values.replyContent,
+        analysis.text || "",
+      )
+        .then(() => {
+          setReviewList((prev) =>
+            prev.map((item) =>
+              item.reviewId === currentReview?.reviewId
+                ? {
+                    ...item,
+                    replyContent: values.replyContent,
+                    updateTime: new Date().toISOString(),
+                  }
+                : item,
+            ),
+          );
+          setReplyModal(false);
+          message.success("评价回复成功");
+        })
+        .catch((err) => {
+          console.error("回复失败", err);
+          message.error("回复失败");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     });
+  };
+
+  // 关闭弹窗时清空数据
+  const handleCloseModal = () => {
+    setReplyModal(false);
+    setCurrentReview(null);
+    setAnalysis({});
+    form.resetFields();
+  };
+
+  // 格式化时间
+  const formatTime = (dateStr?: string) => {
+    if (!dateStr) return "--";
+    return dateStr.replace("T", " ");
   };
 
   // 表格列配置
   const columns: TableProps<ReviewItem>["columns"] = [
     {
       title: "用户信息",
-      dataIndex: "userName",
-      key: "userName",
-      render: (name, record) => (
+      dataIndex: "nickname",
+      key: "nickname",
+      render: (name) => (
         <Space>
           <Image
-            src={record.userAvatar}
+            src="https://picsum.photos/id/64/40/40"
             width={32}
             preview={false}
             style={{ borderRadius: "50%" }}
           />
-          <Text>{name}</Text>
+          <Text>{name || "--"}</Text>
         </Space>
       ),
     },
@@ -179,18 +219,15 @@ const ReviewManagement: React.FC = () => {
       width: 320,
       render: (text, record) => (
         <div>
-          <Text>{text}</Text>
-          {record.images.length > 0 && (
-            <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-              {record.images.map((img, idx) => (
-                <Image
-                  key={idx}
-                  src={img}
-                  width={60}
-                  height={60}
-                  style={{ borderRadius: 4, objectFit: "cover" }}
-                />
-              ))}
+          <Text>{text || "--"}</Text>
+          {record.image && (
+            <div style={{ marginTop: 8 }}>
+              <Image
+                src={record.image}
+                width={60}
+                height={60}
+                style={{ borderRadius: 4, objectFit: "cover" }}
+              />
             </div>
           )}
         </div>
@@ -198,9 +235,10 @@ const ReviewManagement: React.FC = () => {
     },
     {
       title: "评价类型",
-      dataIndex: "level",
-      key: "level",
-      render: (level) => {
+      dataIndex: "reviewType",
+      key: "reviewType",
+      render: (reviewType) => {
+        const level = getLevelFromType(reviewType);
         const config = {
           good: { color: "green", text: "好评" },
           medium: { color: "gold", text: "中评" },
@@ -213,6 +251,7 @@ const ReviewManagement: React.FC = () => {
       title: "评价时间",
       dataIndex: "createTime",
       key: "createTime",
+      render: (time) => formatTime(time),
     },
     {
       title: "回复状态",
@@ -269,17 +308,21 @@ const ReviewManagement: React.FC = () => {
         style={{ marginBottom: 20 }}
       >
         <Space wrap size={16}>
+          {/* 修复后的 Select 组件 */}
           <Select
             placeholder="筛选评价类型"
             style={{ width: 160 }}
-            value={filterLevel}
-            onChange={(val) => setFilterLevel(val)}
+            value={filterLevel || undefined}
+            onChange={(value) => {
+              setFilterLevel(value ? (value as ReviewLevel) : "");
+            }}
             allowClear
-          >
-            <Option value="good">好评</Option>
-            <Option value="medium">中评</Option>
-            <Option value="bad">差评</Option>
-          </Select>
+            options={[
+              { value: "good", label: "好评" },
+              { value: "medium", label: "中评" },
+              { value: "bad", label: "差评" },
+            ]}
+          />
           <Input
             placeholder="搜索评价内容/用户名"
             style={{ width: 260 }}
@@ -311,21 +354,25 @@ const ReviewManagement: React.FC = () => {
           </Space>
         }
         open={replyModal}
-        onCancel={() => setReplyModal(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setReplyModal(false)}>
-            取消
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={loading}
-            onClick={handleSubmitReply}
-            icon={<CheckCircleOutlined />}
-          >
-            提交回复
-          </Button>,
-        ]}
+        onCancel={handleCloseModal}
+        footer={
+          currentReview?.replyContent
+            ? null
+            : [
+                <Button key="cancel" onClick={handleCloseModal}>
+                  取消
+                </Button>,
+                <Button
+                  key="submit"
+                  type="primary"
+                  loading={loading}
+                  onClick={handleSubmitReply}
+                  icon={<CheckCircleOutlined />}
+                >
+                  提交回复
+                </Button>,
+              ]
+        }
         width={650}
         destroyOnClose
       >
@@ -334,67 +381,116 @@ const ReviewManagement: React.FC = () => {
             {/* 评价详情 */}
             <div style={{ marginBottom: 16 }}>
               <Text strong>用户评价：</Text>
-              <p style={{ margin: "8px 0" }}>{currentReview.content}</p>
-              {currentReview.images.length > 0 && (
+              <p style={{ margin: "8px 0" }}>{currentReview.content || "--"}</p>
+              {currentReview.image && (
                 <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                  {currentReview.images.map((img, idx) => (
-                    <Image
-                      key={idx}
-                      src={img}
-                      width={80}
-                      height={80}
-                      style={{ borderRadius: 4 }}
-                    />
-                  ))}
+                  <Image
+                    src={currentReview.image}
+                    width={80}
+                    height={80}
+                    style={{ borderRadius: 4 }}
+                  />
                 </div>
               )}
             </div>
 
-            {/* AI差评分析 */}
-            {currentReview.level === "bad" && (
-              <Card
-                size="small"
-                style={{ marginBottom: 16, background: "#fff7f6" }}
-              >
-                <Text strong style={{ color: "#ff4d4f" }}>
-                  🔍 AI差评分析
-                </Text>
-                <Divider style={{ margin: "8px 0" }} />
-                <div>
-                  <Text>关键词：</Text>
-                  {currentReview.badKeywords?.map((kw) => (
-                    <Tag key={kw} color="red" style={{ marginBottom: 4 }}>
-                      {kw}
-                    </Tag>
-                  ))}
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <Text>改进建议：</Text>
-                  <p style={{ margin: "4px 0", color: "#666" }}>
-                    {currentReview.suggest}
+            {/* 已回复状态：显示AI分析结果和回复内容 */}
+            {currentReview.replyContent && (
+              <>
+                {/* AI分析结果 */}
+                {currentReview.analysis && (
+                  <Card
+                    size="small"
+                    style={{ marginBottom: 16, background: "#fff7f6" }}
+                  >
+                    <Text strong style={{ color: "#ff4d4f" }}>
+                      🔍 AI分析结果
+                    </Text>
+                    <Divider style={{ margin: "8px 0" }} />
+                    <p
+                      style={{
+                        margin: "4px 0",
+                        color: "#666",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {currentReview.analysis}
+                    </p>
+                  </Card>
+                )}
+
+                {/* 回复内容 */}
+                <Card size="small" style={{ background: "#e6f7ff" }}>
+                  <Text strong style={{ color: "#1890ff" }}>
+                    💬 商家回复
+                  </Text>
+                  <Divider style={{ margin: "8px 0" }} />
+                  <p
+                    style={{ margin: "4px 0", color: "#666", lineHeight: 1.6 }}
+                  >
+                    {currentReview.replyContent}
                   </p>
-                </div>
-              </Card>
+                </Card>
+              </>
             )}
 
-            {/* AI回复编辑 */}
-            <Form form={form} layout="vertical">
-              <Form.Item
-                name="replyContent"
-                label={
-                  <Space>
-                    <RobotOutlined />
-                    <span>AI智能回复模板</span>
-                  </Space>
-                }
-                rules={[{ required: true, message: "请输入回复内容" }]}
-              >
-                <TextArea rows={6} placeholder="请编辑回复内容" />
-              </Form.Item>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                💡 系统已自动生成合规礼貌的回复，可直接修改或自定义编辑
-              </Text>
-            </Form>
+            {/* 未回复状态：显示获取AI分析按钮和表单 */}
+            {!currentReview.replyContent && (
+              <>
+                {/* 获取AI分析按钮 */}
+                <Button
+                  type="dashed"
+                  size="large"
+                  icon={<ShakeOutlined />}
+                  onClick={handleGetAIResult}
+                  loading={aiLoading}
+                  style={{ width: "100%", marginBottom: 16 }}
+                >
+                  点击获取AI分析结果与智能回复
+                </Button>
+
+                {/* AI分析结果 */}
+                {analysis.text && (
+                  <Card
+                    size="small"
+                    style={{ marginBottom: 16, background: "#fff7f6" }}
+                  >
+                    <Text strong style={{ color: "#ff4d4f" }}>
+                      🔍 AI分析结果
+                    </Text>
+                    <Divider style={{ margin: "8px 0" }} />
+                    <p
+                      style={{
+                        margin: "4px 0",
+                        color: "#666",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {analysis.text}
+                    </p>
+                  </Card>
+                )}
+
+                {/* AI回复编辑 */}
+                <Form form={form} layout="vertical">
+                  <Form.Item
+                    name="replyContent"
+                    label={
+                      <Space>
+                        <RobotOutlined />
+                        <span>AI智能回复模板</span>
+                      </Space>
+                    }
+                    rules={[{ required: true, message: "请输入回复内容" }]}
+                  >
+                    <TextArea rows={6} placeholder="请编辑回复内容" />
+                  </Form.Item>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    💡 点击上方按钮获取AI智能回复，可直接修改或自定义编辑
+                  </Text>
+                </Form>
+              </>
+            )}
           </div>
         )}
       </Modal>

@@ -232,3 +232,14 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .logout-button {
+    margin-top: 16px;
+    background-color: #ff4d4f;
+    border-color: #ff4d4f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    font-size: 16px;
+    color: white;
+  }

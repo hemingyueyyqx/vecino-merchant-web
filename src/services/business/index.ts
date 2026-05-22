@@ -114,3 +114,29 @@ export const aiTitleOptimize = async (spuName: string) => {
   console.log("ai标题优化", res.data.data);
   return res.data.data;
 };
+// 修改订单状态
+export const updateOrderStatus = async (orderId: string,
+  orderStatus: number
+) => {
+  await axios.put(`order/status?orderId=${orderId}&orderStatus=${orderStatus}`);
+};
+// 回复评价
+export const replyReview = async (
+  reviewId: string,
+  replyContent: string,
+  analysis: string
+) => {
+  await axios.put(`updateComment?reviewId=${reviewId}&replyContent=${replyContent}&analysis=${analysis}`);
+};
+// AI评价分析
+export const aiReviewAnalysis = async (reviewId: string) => {
+  const res = await axios.get(`ai/analysis?reviewId=${reviewId}`);
+  console.log("AI评价分析", res.data.data);
+  return res.data.data;
+};
+// 获取评价详情
+export const getReviewDetail = async () => {
+  const res = await axios.get(`getReviewList`);
+  console.log("评价详情", res.data.data);
+  return res.data.data;
+};

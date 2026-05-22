@@ -233,3 +233,135 @@
   min-width: 40px;
   text-align: center;
 }
+/* 用户信息区域样式 */
+.user-info-section {
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.user-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-info-item {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.info-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  color: #1677ff;
+}
+
+.info-label {
+  color: #888;
+  margin-right: 8px;
+  min-width: 50px;
+}
+
+.info-value {
+  color: #333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-user-info {
+  color: #999;
+  font-size: 14px;
+  text-align: center;
+  padding: 8px;
+}
+/* 支付确认弹窗样式 */
+.pay-confirm-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pay-confirm-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.pay-confirm-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.amount-label {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.amount-value {
+  font-size: 32px;
+  font-weight: 600;
+  color: #ff4d4f;
+}
+
+.pay-confirm-balance {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.balance-label {
+  font-size: 14px;
+  color: #888;
+}
+
+.balance-value {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.pay-confirm-tip {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.pay-confirm-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pay-confirm-actions .cancel-btn {
+  border-color: #d9d9d9;
+  color: #666;
+}
+
+.pay-confirm-actions .confirm-btn {
+  background-color: #1677ff;
+}

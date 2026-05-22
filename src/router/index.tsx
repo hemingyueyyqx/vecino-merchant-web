@@ -16,7 +16,7 @@ import ProductList from "@/components/merchant/ProductList";
 import SelectList from "@/components/ShopCategorySelect";
 import CategoryAudit from "@/components/admin/SpuAuditList";
 import CategoryManage from "@/components/admin/CategoryManage";
-import OrderList from "@/components/merchant/OrderList";
+import OrderList from "@/components/merchant/OrderList/OrderList";
 import MarketingManagement from "@/components/merchant/MarketingManagement";
 import MerchantDataDashboard from "@/components/merchant/MerchantDataDashboard";
 import PlatformDataDashboard from "@/components/admin/PlatformDataDashboard";
