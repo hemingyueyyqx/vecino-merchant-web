@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
-import { Form, Input, Button, message, Alert } from "antd";
+import { Form, Input, Button, message, Alert,Upload } from "antd";
 import {
   ShopOutlined,
   UserOutlined,
   HomeOutlined,
   FileTextOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import "./index.css";
 import { applyShop, findShop } from "@/services/auth";
 import type { ShopInfo } from "@/types/user";
 import ShopCategorySelect from "@/components/ShopCategorySelect"
+// ✅ 修复1：补齐缺失的 UploadFile 类型导入（解决爆红核心问题）
+import type { UploadFile } from "antd/es/upload/interface";
+import { BASE_URL } from "@/services/constant";
 
 const Apply = () => {
   const navigate = useNavigate();
@@ -18,6 +22,8 @@ const Apply = () => {
   const [loading, setLoading] = useState(false);
   const [isReject, setIsReject] = useState(false);
   const [auditReason, setAuditReason] = useState("");
+  // 新增：图片文件列表，用于回显、上传控制
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
   // ✅ 修复1：定义严格的 TS 类型
   const [originalValues, setOriginalValues] = useState<ShopInfo | null>(null);
 
@@ -38,6 +44,19 @@ const Apply = () => {
             shop.secondCategory,
           ].filter(Boolean);
           form.setFieldsValue({ ...shop, category: categoryValue });
+          // 新增：驳回编辑时，回显营业执照图片
+          if (shop.businessImage) {
+            setFileList([
+              {
+                uid: "1",
+                name: "营业执照图片",
+                status: "done",
+                url: shop.businessImage.startsWith("http")
+                  ? shop.businessImage
+                  : BASE_URL + shop.businessImage,
+              },
+            ]);
+          }
         }
       } catch {
         console.log("未查询到店铺信息，全新入驻");
@@ -45,6 +64,35 @@ const Apply = () => {
     };
     loadShopInfo();
   }, [form]);
+  // 新增：图片上传监听事件（核心：拿到后端返回的图片路径，绑定表单）
+  const handleUploadChange = (info: {
+    file: UploadFile;
+    fileList: UploadFile[];
+  }) => {
+    const { file, fileList } = info;
+    // 更新文件列表，用于页面回显
+    setFileList(fileList);
+
+    // 上传成功：后端返回图片URL，自动赋值给表单 businessImage 字段
+    if (file.status === "done") {
+      // 适配后端返回格式，取图片路径
+      const imgUrl = file.response?.imgPath || file.response?.data;
+      if (imgUrl) {
+        form.setFieldValue("businessImage", imgUrl);
+        message.success("营业执照上传成功");
+      }
+    }
+
+    // 上传失败提示
+    if (file.status === "error") {
+      message.error("营业执照上传失败，请重新上传");
+    }
+
+    // 文件删除：清空表单字段
+    if (fileList.length === 0) {
+      form.setFieldValue("businessImage", "");
+    }
+  };
 
   // 提交函数（完整修复）
   // 提交函数（100%保留你的原有逻辑 | 无category字段传给后端）
@@ -87,7 +135,8 @@ const Apply = () => {
         // 新增提交
         submitData = formValues;
       }
-
+      // 最终 submitData 自动携带 businessImage 图片路径，传给后端
+      console.log("最终提交数据（含图片路径）：", submitData);
       await applyShop(submitData);
       message.success(
         isReject ? "修改成功，重新提交审核！" : "申请提交成功，等待审核！",
@@ -162,20 +211,45 @@ const Apply = () => {
             >
               <ShopCategorySelect />
             </Form.Item>
-
+            <Form.Item name="businessImage" label="营业执照">
+              <Upload
+                action="/api/upload" // 替换为实际的上传接口
+                listType="picture-card"
+                maxCount={1}
+                onChange={handleUploadChange}
+                fileList={fileList}
+                // beforeUpload={() => false} // 阻止自动上传，仅预览
+              >
+                {fileList.length === 0 && (
+                  <div>
+                    <UploadOutlined
+                      style={{ fontSize: 24, color: "#1890ff" }}
+                    />
+                    <div style={{ marginTop: 8 }}>上传营业执照</div>
+                  </div>
+                )}
+              </Upload>
+            </Form.Item>
             <Form.Item
               name="businessLicense"
               label="营业执照注册号"
               rules={[
                 { required: true, message: "不能为空" },
-                { pattern: /^[A-Z0-9]{6,20}$/, message: "格式不正确" },
+                {
+                  pattern: /^[0-9A-Z]{18}$/,
+                  message: "请输入18位数字和大写字母",
+                },
               ]}
             >
               <Input
                 prefix={<FileTextOutlined />}
-                placeholder="请输入"
-                maxLength={20}
+                placeholder="请输入18位营业执照注册号"
+                maxLength={18}
                 showCount
+                onChange={(e) => {
+                  // 自动转换为大写
+                  e.target.value = e.target.value.toUpperCase();
+                }}
               />
             </Form.Item>
 
@@ -233,6 +307,6 @@ const Apply = () => {
       </main>
     </div>
   );
-};;
+};;;;;;
 
 export default Apply;

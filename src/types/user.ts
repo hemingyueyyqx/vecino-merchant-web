@@ -49,9 +49,10 @@ export interface ShopInfo {
   // 店铺所属商户ID
   businessId?: string;
   shopName?: string;
-  firstCategoty?: string;
+  firstCategory?: string;
   secondCategory?: string;
   businessLicense?: string;
+  businessImage?: string;
   legalPerson?: string;
   address?: string;
   status?: Status;
@@ -72,6 +73,7 @@ export interface MerchantShop {
   secondCategory: string;
   address: string;
   businessLicense: string;
+  businessImage?: string;
   status: number;
   updateTime?: string;
   auditReason?: string;

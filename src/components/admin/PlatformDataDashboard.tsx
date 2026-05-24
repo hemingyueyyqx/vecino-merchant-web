@@ -211,9 +211,7 @@ const PlatformDataDashboard: React.FC = () => {
             <Option value="week">按周</Option>
             <Option value="month">按月</Option>
           </Select>
-          <Button  onClick={refreshData}>
-            刷新数据
-          </Button>
+          <Button onClick={refreshData}>刷新数据</Button>
           <Button
             icon={<DownloadOutlined />}
             onClick={exportReport}
@@ -223,36 +221,24 @@ const PlatformDataDashboard: React.FC = () => {
           </Button>
         </Space>
       </div>
-
       {/* 顶部核心指标 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col xs={24} sm={12} lg={4}>
-          <Card>
-            <Statistic title="GMV(万元)" value={metrics.gmv} prefix="¥" />
+      <div style={{ display: "flex", gap: "16px", marginBottom: "20px" }}>
+        {[
+          { title: "GMV(万元)", value: metrics.gmv, prefix: "¥" },
+          { title: "总订单量", value: metrics.orderCount },
+          { title: "入驻商家数", value: metrics.merchantCount },
+          { title: "活跃商家数", value: metrics.activeMerchantCount },
+          { title: "配送准时率", value: metrics.deliveryRate },
+        ].map((item, index) => (
+          <Card key={index} style={{ flex: 1 }}>
+            <Statistic
+              title={item.title}
+              value={item.value}
+              prefix={item.prefix}
+            />
           </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={4}>
-          <Card>
-            <Statistic title="总订单量" value={metrics.orderCount} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={4}>
-          <Card>
-            <Statistic title="入驻商家数" value={metrics.merchantCount} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={4}>
-          <Card>
-            <Statistic title="活跃商家数" value={metrics.activeMerchantCount} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={4}>
-          <Card>
-            <Statistic title="配送准时率" value={metrics.deliveryRate} />
-          </Card>
-        </Col>
-      </Row>
-
+        ))}
+      </div>
       {/* 趋势图表 */}
       <Title level={5} style={{ marginBottom: 16 }}>
         趋势数据分析
@@ -274,7 +260,6 @@ const PlatformDataDashboard: React.FC = () => {
           </Card>
         </Col>
       </Row>
-
       {/* 数据拆解 */}
       <Title level={5} style={{ marginBottom: 16 }}>
         多维数据拆解

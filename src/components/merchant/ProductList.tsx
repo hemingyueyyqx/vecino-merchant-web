@@ -13,9 +13,15 @@ import {
   Col,
   Tag,
   Select,
+  Upload,
 } from "antd";
 import type { Key } from "react";
-import { SearchOutlined, PlusOutlined } from "@ant-design/icons";
+import type { UploadFile } from "antd/es/upload/interface";
+import {
+  SearchOutlined,
+  PlusOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
 import type { ProductSpu, ProductSku } from "@/types/product";
 import {
   getSpuList,
@@ -26,15 +32,14 @@ import {
   updateSkuInfo,
   aiTitleOptimize,
 } from "@/services/business";
+// 全局环境变量（和项目统一）
+import { BASE_URL } from "@/services/constant";
 
 // ===================== 商品列表主页面 =====================
 export default function ProductList() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
   const [spuList, setSpuList] = useState<ProductSpu[]>([]);
-  // Deleted:const [total, setTotal] = useState<number>(0);
-  // Deleted:const [page, setPage] = useState<number>(1);
-  // Deleted:const [size, setSize] = useState<number>(10);
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   // 弹窗状态
@@ -65,7 +70,6 @@ export default function ProductList() {
 
       const res = await getSpuList(params);
       setSpuList(res || []);
-      // Deleted:setTotal(res.data.total || 0);
     } catch (err) {
       console.error("获取商品列表失败", err);
       message.error("获取商品列表失败");
@@ -157,7 +161,11 @@ export default function ProductList() {
   };
 
   // 单个上下架
-  const handleSingleStatus = async (spuId: string, currentStatus: 0 | 1,auditStatus: 0 | 1) => {
+  const handleSingleStatus = async (
+    spuId: string,
+    currentStatus: 0 | 1,
+    auditStatus: 0 | 1,
+  ) => {
     const newStatus = currentStatus === 1 ? 0 : 1;
     if (newStatus === 1 && auditStatus !== 1) {
       message.warning("只有审核通过的商品才能上架");
@@ -174,23 +182,6 @@ export default function ProductList() {
     }
   };
 
-  // 删除商品
-  // const handleDelete = async (id: string) => {
-  //   Modal.confirm({
-  //     title: "确认删除",
-  //     content: "删除后无法恢复，是否继续？",
-  //     onOk: async () => {
-  //       try {
-  //         await deleteSpu(id);
-  //         message.success("删除成功");
-  //         fetchList();
-  //       } catch (err) {
-  //         message.error("删除失败");
-  //       }
-  //     },
-  //   });
-  // };
-
   useEffect(() => {
     fetchList();
   }, [fetchList]);
@@ -200,7 +191,16 @@ export default function ProductList() {
     {
       title: "商品主图",
       dataIndex: "mainImage",
-      render: (img: string) => <img src={img} width={50} alt="商品图" />,
+      render: (img: string) =>
+        img ? (
+          <img
+            src={img.startsWith("http") ? img : `${BASE_URL}${img}`}
+            width={50}
+            alt="商品图"
+          />
+        ) : (
+          "-"
+        ),
     },
     { title: "商品名称", dataIndex: "spuName" },
     {
@@ -234,17 +234,16 @@ export default function ProductList() {
           </Button>
           <Button
             type="link"
-            onClick={() => handleSingleStatus(record.spuId!, record.spuStatus!,record.auditStatus!)}
+            onClick={() =>
+              handleSingleStatus(
+                record.spuId!,
+                record.spuStatus!,
+                record.auditStatus!,
+              )
+            }
           >
             {record.spuStatus === 1 ? "下架" : "上架"}
           </Button>
-          {/* <Button
-            danger
-            type="text"
-            onClick={() => handleDelete(record.spuId!)}
-          >
-            删除
-          </Button> */}
         </Space>
       ),
     },
@@ -298,13 +297,8 @@ export default function ProductList() {
         loading={loading}
         columns={columns}
         dataSource={spuList}
-        // Deleted:pagination={{ current: page, pageSize: size, total }}
         pagination={false}
         rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
-        // Deleted:onChange={(p) => {
-        // Deleted:  setPage(p.current!);
-        // Deleted:  setSize(p.pageSize!);
-        // Deleted:}}
       />
 
       {/* 1. SKU弹窗 + 库存预警提示 */}
@@ -420,7 +414,15 @@ export default function ProductList() {
           <Card>
             <Row gutter={[16, 16]}>
               <Col span={8}>
-                <img src={currentSpu.mainImage} width={120} alt="商品图" />
+                <img
+                  src={
+                    currentSpu.mainImage?.startsWith("http")
+                      ? currentSpu.mainImage
+                      : `${BASE_URL}${currentSpu.mainImage}`
+                  }
+                  width={120}
+                  alt="商品图"
+                />
               </Col>
               <Col span={16}>
                 <p>
@@ -546,8 +548,10 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiTitles, setAiTitles] = useState<string[]>([]);
   const [showAiSelector, setShowAiSelector] = useState(false);
-  // const [forceUpdate, setForceUpdate] = useState(0);
   const [spuNameValue, setSpuNameValue] = useState("");
+  // 商品主图上传文件列表
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+
   const [skuList, setSkuList] = useState<ProductSku[]>([
     {
       specAttr: "",
@@ -557,10 +561,12 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
     },
   ]);
 
+  // 弹窗关闭重置所有状态
   useEffect(() => {
     if (!visible) {
       form.resetFields();
       setSpuNameValue("");
+      setFileList([]);
       setSkuList([
         {
           specAttr: "",
@@ -571,9 +577,34 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
       ]);
       setShowAiSelector(false);
       setAiTitles([]);
-      // setForceUpdate(0);
     }
   }, [visible, form]);
+
+  // 主图上传监听
+  const handleUploadChange = (info: {
+    file: UploadFile;
+    fileList: UploadFile[];
+  }) => {
+    const { file, fileList } = info;
+    setFileList(fileList);
+
+    // 上传成功，赋值给mainImage
+    if (file.status === "done") {
+      const imgUrl = file.response?.imgPath || file.response?.data;
+      if (imgUrl) {
+        form.setFieldValue("mainImage", imgUrl);
+        message.success("商品主图上传成功");
+      }
+    }
+    if (file.status === "error") {
+      message.error("商品主图上传失败");
+    }
+    // 删除图片清空字段
+    if (fileList.length === 0) {
+      form.setFieldValue("mainImage", "");
+    }
+  };
+
   // AI标题优化模拟
   const handleAiOptimize = async () => {
     const name = form.getFieldValue("spuName");
@@ -597,21 +628,10 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
       setAiLoading(false);
     }
   };
-  const handleSelectAiTitle = (selectedTitle: string) => {
-    // console.log("选中的标题:", selectedTitle);
-    // console.log("当前表单值:", form.getFieldsValue());
 
-    // form.setFieldValue("spuName", selectedTitle);
-    // setForceUpdate((prev) => prev + 1);
-    // setTimeout(() => {
-    //   form.setFieldValue("spuName", selectedTitle);
-    //   console.log("设置后的值:", form.getFieldValue("spuName"));
-    // }, 0);
+  const handleSelectAiTitle = (selectedTitle: string) => {
     setSpuNameValue(selectedTitle);
     form.setFieldValue("spuName", selectedTitle);
-    // console.log("设置后的表单值:", form.getFieldsValue());
-    // console.log("spuName字段值:", form.getFieldValue("spuName"));
-
     setShowAiSelector(false);
     setAiTitles([]);
     message.success("已应用选中的AI标题");
@@ -642,15 +662,6 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
       message.success("商品新增成功");
       onSuccess();
       onClose();
-      // form.resetFields();
-      // setSkuList([
-      //   {
-      //     specAttr: "",
-      //     price: 0,
-      //     stockNum: 0,
-      //     warnStock: 10,
-      //   },
-      // ]);
     } catch (err) {
       message.error("商品新增失败");
     }
@@ -665,25 +676,33 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
       width={900}
     >
       <Form form={form} layout="vertical">
+        {/* 商品主图-上传组件（替换输入框，绑定mainImage） */}
         <Form.Item
           label="商品主图"
           name="mainImage"
-          rules={[{ required: true, message: "请输入商品主图链接" }]}
+          rules={[{ required: true, message: "请上传商品主图" }]}
         >
-          <Input placeholder="输入图片链接" />
+          <Upload
+            action="/api/upload"
+            listType="picture-card"
+            maxCount={1}
+            onChange={handleUploadChange}
+            fileList={fileList}
+          >
+            {fileList.length === 0 && (
+              <div>
+                <UploadOutlined style={{ fontSize: 24, color: "#1890ff" }} />
+                <div style={{ marginTop: 8 }}>上传商品主图</div>
+              </div>
+            )}
+          </Upload>
         </Form.Item>
+
         <Form.Item
           label="商品名称"
           name="spuName"
           rules={[{ required: true, message: "请输入商品名称" }]}
         >
-          {/* <Space.Compact style={{ width: "100%" }}>
-            <Input placeholder="请输入商品名称"
-            />
-            <Button loading={aiLoading} onClick={handleAiOptimize}>
-              AI优化标题
-            </Button>
-          </Space.Compact> */}
           <div style={{ display: "flex", gap: "8px" }}>
             <Input
               value={spuNameValue}
@@ -699,6 +718,7 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
             </Button>
           </div>
         </Form.Item>
+
         {showAiSelector && aiTitles.length > 0 && (
           <Form.Item label="AI优化标题选择">
             <Space orientation="vertical" style={{ width: "100%" }}>
@@ -717,9 +737,11 @@ const CreateGoodsModal: React.FC<CreateGoodsProps> = ({
             </Space>
           </Form.Item>
         )}
+
         <Form.Item label="商品详情" name="detail">
           <Input.TextArea rows={3} placeholder="请输入商品详情描述" />
         </Form.Item>
+
         <Form.Item label="SKU规格管理（批量添加）">
           <Button
             type="dashed"
@@ -845,7 +867,10 @@ const EditGoodsModal: React.FC<EditGoodsProps> = ({
   spuData,
 }) => {
   const [form] = Form.useForm();
+  // 编辑页图片回显列表
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
+  // 数据回显 + 图片回显
   useEffect(() => {
     if (visible && spuData) {
       form.setFieldsValue({
@@ -853,8 +878,49 @@ const EditGoodsModal: React.FC<EditGoodsProps> = ({
         mainImage: spuData.mainImage,
         detail: spuData.detail,
       });
+
+      // 回显已有商品主图
+      if (spuData.mainImage) {
+        setFileList([
+          {
+            uid: "1",
+            name: "商品主图",
+            status: "done",
+            url: spuData.mainImage.startsWith("http")
+              ? spuData.mainImage
+              : `${BASE_URL}${spuData.mainImage}`,
+          },
+        ]);
+      } else {
+        setFileList([]);
+      }
+    } else {
+      setFileList([]);
     }
   }, [visible, spuData, form]);
+
+  // 主图上传监听
+  const handleUploadChange = (info: {
+    file: UploadFile;
+    fileList: UploadFile[];
+  }) => {
+    const { file, fileList } = info;
+    setFileList(fileList);
+
+    if (file.status === "done") {
+      const imgUrl = file.response?.imgPath || file.response?.data;
+      if (imgUrl) {
+        form.setFieldValue("mainImage", imgUrl);
+        message.success("商品主图更新成功");
+      }
+    }
+    if (file.status === "error") {
+      message.error("商品主图上传失败");
+    }
+    if (fileList.length === 0) {
+      form.setFieldValue("mainImage", "");
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -864,9 +930,6 @@ const EditGoodsModal: React.FC<EditGoodsProps> = ({
         spuName: values.spuName,
         mainImage: values.mainImage,
         detail: values.detail,
-        auditStatus: values.auditStatus,
-        auditRemark: values.auditRemark,
-        status: values.status,
       };
 
       await editSpu(updateData);
@@ -894,9 +957,29 @@ const EditGoodsModal: React.FC<EditGoodsProps> = ({
         >
           <Input />
         </Form.Item>
-        <Form.Item label="商品主图" name="mainImage">
-          <Input placeholder="输入图片链接" />
+
+        {/* 编辑页-商品主图上传组件 */}
+        <Form.Item
+          label="商品主图"
+          name="mainImage"
+          rules={[{ required: true, message: "请上传商品主图" }]}
+        >
+          <Upload
+            action="/api/upload"
+            listType="picture-card"
+            maxCount={1}
+            onChange={handleUploadChange}
+            fileList={fileList}
+          >
+            {fileList.length === 0 && (
+              <div>
+                <UploadOutlined style={{ fontSize: 24, color: "#1890ff" }} />
+                <div style={{ marginTop: 8 }}>上传商品主图</div>
+              </div>
+            )}
+          </Upload>
         </Form.Item>
+
         <Form.Item label="商品详情" name="detail">
           <Input.TextArea rows={3} placeholder="请输入商品详情描述" />
         </Form.Item>
@@ -904,6 +987,7 @@ const EditGoodsModal: React.FC<EditGoodsProps> = ({
     </Modal>
   );
 };
+
 // ===================== SKU 编辑弹窗 =====================
 interface SkuEditModalProps {
   visible: boolean;
@@ -959,7 +1043,7 @@ const SkuEditModal: React.FC<SkuEditModalProps> = ({
       if (onCloseSkuModal) {
         onCloseSkuModal();
       }
-      onClose();    
+      onClose();
     } catch (err) {
       console.error("SKU 编辑失败", err);
       message.error("SKU 编辑失败");

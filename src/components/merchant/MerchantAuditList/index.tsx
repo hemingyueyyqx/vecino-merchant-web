@@ -10,6 +10,7 @@ import {
   Descriptions,
   Form,
   Input,
+  Image,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EyeOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
@@ -22,6 +23,8 @@ import {
 // 🔥 导入你抽离的类目配置
 import categoryOptions from "@/services/const";
 import { type MerchantShop, type CategoryItem } from "@/types/user";
+import { BASE_URL } from "@/services/constant";
+
 import "./index.css";
 
 const { Title } = Typography;
@@ -113,6 +116,37 @@ const MerchantAuditList = () => {
   const columns: ColumnsType<MerchantShop> = [
     { title: "店铺名称", dataIndex: "shopName", width: 170 },
     { title: "法人", dataIndex: "legalPerson", width: 100 },
+    // 营业执照列 替换原有代码
+    {
+      title: "营业执照",
+      width: 120,
+      render: (_, record: MerchantShop) => {
+        // 获取后端返回的图片路径
+        const imgPath = record.businessImage;
+        // 拼接完整可访问地址
+        const fullImgUrl = imgPath
+          ? imgPath.startsWith("http")
+            ? imgPath
+            : `${BASE_URL}${imgPath}`
+          : "";
+
+        // 无图片时展示暂无图片占位
+        if (!fullImgUrl) {
+          return <span style={{ color: "#999" }}>暂无图片</span>;
+        }
+
+        return (
+          <Image
+            src={fullImgUrl}
+            width={80}
+            height={60}
+            style={{ objectFit: "cover", borderRadius: 4 }}
+            preview={true} // 开启大图预览，方便审核查看
+            fallback=""
+          />
+        );
+      },
+    },
     { title: "营业执照注册号", dataIndex: "businessLicense", width: 150 },
     {
       title: "店铺类型",
