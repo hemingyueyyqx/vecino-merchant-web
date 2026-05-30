@@ -20,6 +20,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import { updateOrderStatus } from "@/services/business";
 import { getOrderList } from "@/services/customer";
+import { BASE_URL } from "@/services/constant";
 import type { Order } from "@/types/order";
 
 const orderStatusMap: Record<number, { label: string; color: string }> = {
@@ -134,11 +135,37 @@ const OrderList: React.FC = () => {
       width: 280,
       render: (_: any, record: Order) => (
         <div style={{ display: "flex", alignItems: "center" }}>
-          <img
-            src={record.mainImage || "https://picsum.photos/60/60"}
-            alt={record.spuName}
-            style={{ width: 60, height: 60, borderRadius: 8, marginRight: 12 }}
-          />
+          {record.mainImage ? (
+            <img
+              src={
+                record.mainImage.startsWith("http")
+                  ? record.mainImage
+                  : `${BASE_URL}${record.mainImage}`
+              }
+              alt={record.spuName}
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 8,
+                marginRight: 12,
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 8,
+                marginRight: 12,
+                backgroundColor: "#f5f5f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              -
+            </div>
+          )}
           <div>
             <div style={{ fontWeight: "bold", marginBottom: 4 }}>
               {record.spuName || "--"}

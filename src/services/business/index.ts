@@ -51,6 +51,12 @@ export const getSpuList = async (params) => {
   console.log("商品列表", res.data.data);
   return res.data.data;
 };
+export const getAuditSpuList = async (params) => {
+  console.log("审核商品列表参数", params);
+  const res = await axios.post("product/productInfos", params);
+  console.log("审核商品列表", res.data.data);
+  return res.data.data;
+};
 
 // 2. 商品批量上下架
 export const batchUpdateSpuStatus = async (data: {

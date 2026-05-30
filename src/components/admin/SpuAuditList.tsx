@@ -11,7 +11,7 @@ import {
   Row,
   Col,
   Tag,
-  Select,// 修复缺失导入
+  Select,
 } from "antd";
 import type { Key } from "react";
 import {
@@ -20,13 +20,9 @@ import {
   CloseOutlined,
 } from "@ant-design/icons";
 import type { ProductSpu, ProductSku } from "@/types/product";
-
-// 模拟店铺列表（用于顶部筛选下拉框）
-const SHOP_LIST = [
-  { label: "美妆优选旗舰店", value: "美妆优选旗舰店" },
-  { label: "大牌彩妆专卖店", value: "大牌彩妆专卖店" },
-  { label: "护肤美妆个体店", value: "护肤美妆个体店" },
-];
+import { getAuditSpuList, getAllMerchantsAndShop } from "@/services/business";
+import { batchUpdateAuditSpuStatus } from "@/services/admin";
+import { BASE_URL } from "@/services/constant";
 
 // 审核状态枚举
 const AUDIT_STATUS = {
@@ -35,227 +31,10 @@ const AUDIT_STATUS = {
   2: { text: "审核驳回", color: "red" },
 };
 
-// 复用商家端商品死数据 + 新增 店铺名称、商家名称
-const MOCK_SPU_LIST: ProductSpu[] = [
-  {
-    id: "spu_001",
-    spuName: "FOXUP粉底液30ml",
-    mainImage: "https://picsum.photos/50/50?random=1",
-    status: 1,
-    auditStatus: 0,
-    shopName: "美妆优选旗舰店", // 新增
-    merchantName: "张三商家", // 新增
-    createTime: "2026-04-01",
-    skuList: [
-      {
-        id: "sku_001",
-        specAttr: "色号01粉瓷白",
-        price: 129,
-        stockNum: 88,
-        warnStock: 10,
-      },
-      {
-        id: "sku_002",
-        specAttr: "色号02象牙白",
-        price: 129,
-        stockNum: 66,
-        warnStock: 10,
-      },
-      {
-        id: "sku_003",
-        specAttr: "色号03自然色",
-        price: 129,
-        stockNum: 5,
-        warnStock: 10,
-      },
-      {
-        id: "sku_004",
-        specAttr: "色号04小麦色",
-        price: 129,
-        stockNum: 30,
-        warnStock: 10,
-      },
-    ],
-  },
-  {
-    id: "spu_002",
-    spuName: "橘朵高光修容盘10g",
-    mainImage: "https://picsum.photos/50/50?random=2",
-    status: 1,
-    auditStatus: 0,
-    shopName: "美妆优选旗舰店",
-    merchantName: "张三商家",
-    createTime: "2026-04-02",
-    skuList: [
-      {
-        id: "sku_005",
-        specAttr: "01高光盘",
-        price: 59,
-        stockNum: 99,
-        warnStock: 15,
-      },
-      {
-        id: "sku_006",
-        specAttr: "02修容盘",
-        price: 59,
-        stockNum: 80,
-        warnStock: 15,
-      },
-    ],
-  },
-  {
-    id: "spu_003",
-    spuName: "YSL纯口红4g",
-    mainImage: "https://picsum.photos/50/50?random=3",
-    status: 1,
-    auditStatus: 1,
-    shopName: "大牌彩妆专卖店",
-    merchantName: "李四商家",
-    createTime: "2026-04-03",
-    skuList: [
-      {
-        id: "sku_007",
-        specAttr: "1966暖棕红",
-        price: 380,
-        stockNum: 40,
-        warnStock: 8,
-      },
-    ],
-  },
-  {
-    id: "spu_004",
-    spuName: "完美日记散粉8g",
-    mainImage: "https://picsum.photos/50/50?random=4",
-    status: 1,
-    auditStatus: 2,
-    shopName: "大牌彩妆专卖店",
-    merchantName: "李四商家",
-    createTime: "2026-04-04",
-    skuList: [
-      {
-        id: "sku_009",
-        specAttr: "透明色",
-        price: 79,
-        stockNum: 120,
-        warnStock: 20,
-      },
-    ],
-  },
-  {
-    id: "spu_005",
-    spuName: "花西子蜜粉饼7g",
-    mainImage: "https://picsum.photos/50/50?random=5",
-    status: 1,
-    auditStatus: 0,
-    shopName: "护肤美妆个体店",
-    merchantName: "王五商家",
-    createTime: "2026-04-05",
-    skuList: [
-      {
-        id: "sku_010",
-        specAttr: "自然色",
-        price: 149,
-        stockNum: 60,
-        warnStock: 10,
-      },
-    ],
-  },
-  {
-    id: "spu_006",
-    spuName: "珂拉琪唇釉3.5g",
-    mainImage: "https://picsum.photos/50/50?random=6",
-    status: 1,
-    auditStatus: 1,
-    shopName: "护肤美妆个体店",
-    merchantName: "王五商家",
-    createTime: "2026-04-06",
-    skuList: [
-      {
-        id: "sku_011",
-        specAttr: "B705焦糖奶茶",
-        price: 69,
-        stockNum: 150,
-        warnStock: 30,
-      },
-    ],
-  },
-  {
-    id: "spu_007",
-    spuName: "UNNY眉笔0.1g",
-    mainImage: "https://picsum.photos/50/50?random=7",
-    status: 1,
-    auditStatus: 0,
-    shopName: "美妆优选旗舰店",
-    merchantName: "张三商家",
-    createTime: "2026-04-07",
-    skuList: [
-      {
-        id: "sku_012",
-        specAttr: "深棕色",
-        price: 29,
-        stockNum: 200,
-        warnStock: 40,
-      },
-    ],
-  },
-  {
-    id: "spu_008",
-    spuName: "3CE眼影盘9g",
-    mainImage: "https://picsum.photos/50/50?random=8",
-    status: 1,
-    auditStatus: 1,
-    shopName: "大牌彩妆专卖店",
-    merchantName: "李四商家",
-    createTime: "2026-04-08",
-    skuList: [
-      {
-        id: "sku_013",
-        specAttr: "九宫格燕麦盘",
-        price: 239,
-        stockNum: 45,
-        warnStock: 10,
-      },
-    ],
-  },
-  {
-    id: "spu_009",
-    spuName: "馥蕾诗唇膏4.3g",
-    mainImage: "https://picsum.photos/50/50?random=9",
-    status: 1,
-    auditStatus: 2,
-    shopName: "护肤美妆个体店",
-    merchantName: "王五商家",
-    createTime: "2026-04-09",
-    skuList: [
-      {
-        id: "sku_014",
-        specAttr: "经典无色",
-        price: 220,
-        stockNum: 33,
-        warnStock: 5,
-      },
-    ],
-  },
-  {
-    id: "spu_010",
-    spuName: "魅可生姜高光9g",
-    mainImage: "https://picsum.photos/50/50?random=10",
-    status: 1,
-    auditStatus: 0,
-    shopName: "美妆优选旗舰店",
-    merchantName: "张三商家",
-    createTime: "2026-04-10",
-    skuList: [
-      {
-        id: "sku_015",
-        specAttr: "经典色",
-        price: 360,
-        stockNum: 28,
-        warnStock: 8,
-      },
-    ],
-  },
-];
+// 店铺列表接口返回类型
+interface ShopOption {
+  shopName?: string;
+}
 
 // ===================== 平台SPU审核列表主页面 =====================
 export default function SpuAuditList() {
@@ -266,44 +45,41 @@ export default function SpuAuditList() {
   const [page, setPage] = useState<number>(1);
   const [size, setSize] = useState<number>(10);
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
+  const [shopList, setShopList] = useState<ShopOption[]>([]);
 
   // 弹窗状态
   const [detailModal, setDetailModal] = useState<boolean>(false);
   const [auditModal, setAuditModal] = useState<boolean>(false);
+  const [batchRejectModal, setBatchRejectModal] = useState<boolean>(false);
 
   // 审核操作状态
   const [auditType, setAuditType] = useState<"pass" | "reject">("pass");
   const [currentSpu, setCurrentSpu] = useState<ProductSpu | null>(null);
   const [rejectReason, setRejectReason] = useState<string>("");
+  const [batchRejectReason, setBatchRejectReason] = useState<string>("");
 
   // 获取审核列表（带筛选：商品名+审核状态+店铺名称）
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
       const { spuName = "", auditStatus, shopName } = form.getFieldsValue();
-      let filterList = MOCK_SPU_LIST.filter((item) =>
-        item.spuName?.includes(spuName),
-      );
-      // 审核状态筛选
-      if (auditStatus !== undefined) {
-        filterList = filterList.filter(
-          (item) => item.auditStatus === auditStatus,
-        );
-      }
-      // 新增：店铺名称筛选
-      if (shopName) {
-        filterList = filterList.filter((item) => item.shopName === shopName);
-      }
-      setTotal(filterList.length);
-      const start = (page - 1) * size;
-      const end = start + size;
-      setSpuList(filterList.slice(start, end));
+
+      const params: any = {};
+      if (spuName) params.spuName = spuName;
+      if (auditStatus !== undefined && auditStatus !== null)
+        params.auditStatus = auditStatus;
+      if (shopName) params.shopName = shopName;
+
+      const res = await getAuditSpuList(params);
+      setSpuList(res || []);
+      setTotal(res?.length || 0);
     } catch (err) {
       console.error("获取审核列表失败", err);
+      message.error("获取审核列表失败");
     } finally {
       setLoading(false);
     }
-  }, [page, size, form]);
+  }, [form]);
 
   // 查看商品详情（只读）
   const handleViewDetail = (spu: ProductSpu) => {
@@ -319,20 +95,30 @@ export default function SpuAuditList() {
     setAuditModal(true);
   };
 
-  // 提交审核操作
-  const handleSubmitAudit = () => {
+  // 提交审核操作（单个商品审核）
+  const handleSubmitAudit = async () => {
     if (auditType === "reject" && !rejectReason.trim()) {
       message.warning("请填写驳回原因");
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const auditStatus = auditType === "pass" ? 1 : 2;
+      await batchUpdateAuditSpuStatus({
+        spuIds: [currentSpu?.spuId!],
+        auditStatus,
+        auditRemark: auditType === "reject" ? rejectReason : undefined,
+      });
       const statusText = auditType === "pass" ? "通过" : "驳回";
       message.success(`商品【${currentSpu?.spuName}】审核${statusText}成功`);
       setAuditModal(false);
       fetchList();
+    } catch (err) {
+      console.error("审核操作失败", err);
+      message.error("审核操作失败");
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   // 批量审核
@@ -341,34 +127,100 @@ export default function SpuAuditList() {
       message.warning("请选择需要审核的商品");
       return;
     }
-    Modal.confirm({
-      title: type === "pass" ? "批量通过" : "批量驳回",
-      content: `确定要${type === "pass" ? "通过" : "驳回"}选中的 ${selectedRowKeys.length} 个商品吗？`,
-      onOk: () => {
-        message.success(`批量${type === "pass" ? "通过" : "驳回"}成功`);
-        fetchList();
-        setSelectedRowKeys([]);
-      },
-    });
+
+    // 如果是驳回，打开批量驳回弹窗
+    if (type === "reject") {
+      setBatchRejectReason("");
+      setBatchRejectModal(true);
+    } else {
+      // 批量通过
+      Modal.confirm({
+        title: "批量通过",
+        content: `确定要通过选中的 ${selectedRowKeys.length} 个商品吗？`,
+        onOk: async () => {
+          setLoading(true);
+          try {
+            await batchUpdateAuditSpuStatus({
+              spuIds: selectedRowKeys.map((key) => String(key)),
+              auditStatus: 1,
+            });
+            message.success("批量通过成功");
+            fetchList();
+            setSelectedRowKeys([]);
+          } catch (err) {
+            console.error("批量审核失败", err);
+            message.error("批量审核失败");
+          } finally {
+            setLoading(false);
+          }
+        },
+      });
+    }
   };
 
+  // 确认批量驳回
+  const handleConfirmBatchReject = async () => {
+    if (!batchRejectReason.trim()) {
+      message.warning("请填写驳回原因");
+      return;
+    }
+    setLoading(true);
+    try {
+      await batchUpdateAuditSpuStatus({
+        spuIds: selectedRowKeys.map((key) => String(key)),
+        auditStatus: 2,
+        auditRemark: batchRejectReason,
+      });
+      message.success("批量驳回成功");
+      fetchList();
+      setSelectedRowKeys([]);
+      setBatchRejectReason("");
+      setBatchRejectModal(false);
+    } catch (err) {
+      console.error("批量审核失败", err);
+      message.error("批量审核失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 初始化时获取店铺列表
   useEffect(() => {
+    fetchShopList();
     fetchList();
   }, [fetchList]);
 
-  // 表格列定义 + 新增店铺/商家列
+  // 获取店铺列表
+  const fetchShopList = useCallback(async () => {
+    try {
+      const shops = await getAllMerchantsAndShop();
+      setShopList(shops || []);
+    } catch (err) {
+      console.error("获取店铺列表失败", err);
+    }
+  }, []);
+
+  // 表格列定义
   const columns = [
     {
       title: "商品主图",
       dataIndex: "mainImage",
-      render: (img: string) => <img src={img} width={50} alt="商品图" />,
+      render: (img: string) =>
+        img ? (
+          <img
+            src={img.startsWith("http") ? img : `${BASE_URL}${img}`}
+            width={50}
+            alt="商品图"
+          />
+        ) : (
+          "-"
+        ),
     },
     { title: "商品名称", dataIndex: "spuName" },
-    { title: "店铺名称", dataIndex: "shopName" }, // 新增
-    { title: "商家名称", dataIndex: "merchantName" }, // 新增
+    { title: "店铺名称", dataIndex: "shopName" },
     {
       title: "上下架状态",
-      dataIndex: "status",
+      dataIndex: "spuStatus",
       render: (s: 0 | 1) => (s ? "✅ 上架" : "❌ 下架"),
     },
     {
@@ -380,7 +232,11 @@ export default function SpuAuditList() {
         </Tag>
       ),
     },
-    { title: "创建时间", dataIndex: "createTime" },
+    {
+      title: "创建时间",
+      dataIndex: "createTime",
+      render: (time: string) => time?.split("T")[0] || "-",
+    },
     {
       title: "平台操作",
       render: (_: unknown, record: ProductSpu) => (
@@ -419,12 +275,12 @@ export default function SpuAuditList() {
         <Form.Item name="spuName">
           <Input placeholder="商品名称搜索" />
         </Form.Item>
-        {/* 新增：店铺筛选下拉框 */}
+        {/* 店铺筛选下拉框 */}
         <Form.Item name="shopName" label="店铺名称">
           <Select placeholder="全部店铺" style={{ width: 160 }} allowClear>
-            {SHOP_LIST.map((shop) => (
-              <Select.Option key={shop.value} value={shop.value}>
-                {shop.label}
+            {shopList.map((shop) => (
+              <Select.Option key={shop.shopName} value={shop.shopName}>
+                {shop.shopName}
               </Select.Option>
             ))}
           </Select>
@@ -463,7 +319,7 @@ export default function SpuAuditList() {
 
       {/* SPU审核列表表格 */}
       <Table
-        rowKey="id"
+        rowKey="spuId"
         loading={loading}
         columns={columns}
         dataSource={spuList}
@@ -487,7 +343,15 @@ export default function SpuAuditList() {
           <Card>
             <Row gutter={[16, 16]}>
               <Col span={8}>
-                <img src={currentSpu.mainImage} width={120} alt="商品图" />
+                <img
+                  src={
+                    currentSpu.mainImage?.startsWith("http")
+                      ? currentSpu.mainImage
+                      : `/${currentSpu.mainImage}`
+                  }
+                  width={120}
+                  alt="商品图"
+                />
               </Col>
               <Col span={16}>
                 <p>
@@ -497,27 +361,27 @@ export default function SpuAuditList() {
                 <p>
                   <b>店铺名称：</b>
                   {currentSpu.shopName}
-                </p>{" "}
-                {/* 新增 */}
-                <p>
-                  <b>商家名称：</b>
-                  {currentSpu.merchantName}
-                </p>{" "}
-                {/* 新增 */}
+                </p>
                 <p>
                   <b>创建时间：</b>
-                  {currentSpu.createTime}
+                  {currentSpu.createTime?.split("T")[0] || "-"}
                 </p>
                 <p>
                   <b>上下架状态：</b>
-                  {currentSpu.status ? "上架" : "下架"}
+                  {currentSpu.spuStatus ? "上架" : "下架"}
                 </p>
                 <p>
                   <b>审核状态：</b>
-                  <Tag color={AUDIT_STATUS[currentSpu.auditStatus].color}>
-                    {AUDIT_STATUS[currentSpu.auditStatus].text}
+                  <Tag color={AUDIT_STATUS[currentSpu.auditStatus!].color}>
+                    {AUDIT_STATUS[currentSpu.auditStatus!].text}
                   </Tag>
                 </p>
+                {currentSpu.auditRemark && (
+                  <p>
+                    <b>审核备注：</b>
+                    {currentSpu.auditRemark}
+                  </p>
+                )}
               </Col>
             </Row>
             <div style={{ marginTop: 20 }}>
@@ -591,15 +455,14 @@ export default function SpuAuditList() {
             <p>
               <b>店铺名称：</b>
               {currentSpu.shopName}
-            </p>{" "}
-            {/* 新增 */}
+            </p>
             <p>
               <b>操作类型：</b>
               {auditType === "pass" ? "审核通过" : "审核驳回"}
             </p>
             {auditType === "reject" && (
               <Form.Item label="驳回原因" style={{ marginTop: 16 }}>
-                <TextArea
+                <Input.TextArea
                   rows={4}
                   placeholder="请填写驳回原因（必填）"
                   value={rejectReason}
@@ -609,6 +472,31 @@ export default function SpuAuditList() {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* 批量驳回弹窗 */}
+      <Modal
+        open={batchRejectModal}
+        title="批量驳回"
+        onCancel={() => {
+          setBatchRejectModal(false);
+          setBatchRejectReason("");
+        }}
+        onOk={handleConfirmBatchReject}
+        confirmLoading={loading}
+        width={500}
+      >
+        <div>
+          <p>确定要驳回选中的 {selectedRowKeys.length} 个商品吗？</p>
+          <Form.Item label="驳回原因" style={{ marginTop: 16 }}>
+            <Input.TextArea
+              rows={4}
+              placeholder="请填写驳回原因（必填）"
+              value={batchRejectReason}
+              onChange={(e) => setBatchRejectReason(e.target.value)}
+            />
+          </Form.Item>
+        </div>
       </Modal>
     </div>
   );

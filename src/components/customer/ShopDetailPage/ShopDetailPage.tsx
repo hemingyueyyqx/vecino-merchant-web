@@ -17,6 +17,7 @@ import {
   LocationOutline,
 } from "antd-mobile-icons";
 import { getSpuList } from "@/services/business";
+import { BASE_URL } from "@/services/constant";
 import type { ProductSpu, ProductSku } from "@/types/product";
 import type { MerchantShop, UserInfo } from "@/types/user";
 import { getUserInfo } from "@/services/customer";
@@ -55,7 +56,7 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
   useEffect(() => {
     // 定义异步函数
     const loadProducts = async () => {
-  setLoading(true);
+      setLoading(true);
       try {
         const params = {
           shopId: shop.shopId,
@@ -248,14 +249,19 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
                     onClick={() => handleCardClick(product)}
                   >
                     <div className="product-image-wrapper">
-                      <img
-                        src={
-                          product.mainImage ||
-                          "https://picsum.photos/200/200?random=1"
-                        }
-                        alt={product.spuName}
-                        className="product-image"
-                      />
+                      {product.mainImage ? (
+                        <img
+                          src={
+                            product.mainImage.startsWith("http")
+                              ? product.mainImage
+                              : `${BASE_URL}${product.mainImage}`
+                          }
+                          alt={product.spuName}
+                          className="product-image"
+                        />
+                      ) : (
+                        <div className="no-image">-</div>
+                      )}
                     </div>
                     <div className="product-info">
                       <h4 className="product-name" title={product.spuName}>
@@ -349,13 +355,31 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
           {selectedProduct && (
             <>
               <div className="product-preview">
-                <Image
-                  src={
-                    selectedProduct.mainImage || "https://picsum.photos/100/100"
-                  }
-                  fit="cover"
-                  style={{ width: 80, height: 80, borderRadius: 8 }}
-                />
+                {selectedProduct.mainImage ? (
+                  <Image
+                    src={
+                      selectedProduct.mainImage.startsWith("http")
+                        ? selectedProduct.mainImage
+                        : `${BASE_URL}${selectedProduct.mainImage}`
+                    }
+                    fit="cover"
+                    style={{ width: 80, height: 80, borderRadius: 8 }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 8,
+                      backgroundColor: "#f5f5f5",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    -
+                  </div>
+                )}
                 <div className="preview-info">
                   <div className="preview-name">{selectedProduct.spuName}</div>
                   <div className="preview-price">
@@ -510,13 +534,31 @@ function ShopDetailPage({ shop, onBack }: ShopDetailPageProps) {
 
           {selectedProduct && (
             <div className="product-detail">
-              <Image
-                src={
-                  selectedProduct.mainImage || "https://picsum.photos/300/300"
-                }
-                fit="cover"
-                style={{ width: "100%", height: 200, borderRadius: 8 }}
-              />
+              {selectedProduct.mainImage ? (
+                <Image
+                  src={
+                    selectedProduct.mainImage.startsWith("http")
+                      ? selectedProduct.mainImage
+                      : `${BASE_URL}${selectedProduct.mainImage}`
+                  }
+                  fit="cover"
+                  style={{ width: "100%", height: 200, borderRadius: 8 }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: 200,
+                    borderRadius: 8,
+                    backgroundColor: "#f5f5f5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  -
+                </div>
+              )}
 
               <div className="detail-info">
                 <h2 className="detail-name">{selectedProduct.spuName}</h2>

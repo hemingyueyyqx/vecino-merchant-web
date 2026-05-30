@@ -160,7 +160,7 @@ export default function ProductList() {
     }
   };
 
-  // 单个上下架
+  // 单个上下架（复用批量接口）
   const handleSingleStatus = async (
     spuId: string,
     currentStatus: 0 | 1,
@@ -173,8 +173,10 @@ export default function ProductList() {
     }
 
     try {
-      const data = { id: spuId, status: newStatus };
-      await editSpu(data);
+      await batchUpdateSpuStatus({
+        spuIds: [spuId],
+        status: newStatus,
+      });
       message.success(`${newStatus === 1 ? "上架" : "下架"}成功`);
       fetchList();
     } catch (err) {

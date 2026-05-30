@@ -25,7 +25,8 @@ import {
   addReview,
   getReview,
 } from "@/services/customer";
-import { updateOrderStatus } from "@/services/business"; // 导入 updateOrderStatus 接口
+import { updateOrderStatus } from "@/services/business";
+import { BASE_URL } from "@/services/constant";
 import type { Order, Review } from "@/types/order";
 import "./index.css";
 
@@ -79,9 +80,7 @@ const formatDateTime = (dateStr?: string) => {
 
 const EmptyState = () => (
   <div className="empty-state">
-    <SmileOutline
-      style={{ fontSize: 48, color: "#ccc", marginBottom: 16 }}
-    />
+    <SmileOutline style={{ fontSize: 48, color: "#ccc", marginBottom: 16 }} />
     <div className="empty-text">暂无订单</div>
   </div>
 );
@@ -299,11 +298,19 @@ function OrderListPage() {
                 )}
 
                 <div className="order-item">
-                  <Image
-                    src={order.mainImage || "https://picsum.photos/80/80"}
-                    fit="cover"
-                    className="item-image"
-                  />
+                  {order.mainImage ? (
+                    <Image
+                      src={
+                        order.mainImage.startsWith("http")
+                          ? order.mainImage
+                          : `${BASE_URL}${order.mainImage}`
+                      }
+                      fit="cover"
+                      className="item-image"
+                    />
+                  ) : (
+                    <div className="no-image-placeholder">-</div>
+                  )}
                   <div className="item-info">
                     <div className="item-name">{order.spuName || "--"}</div>
                     <div className="item-spec">

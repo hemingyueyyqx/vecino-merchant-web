@@ -10,8 +10,8 @@ import type {
 // ============= 类目管理 =============
 // 获取类目树形结构
 export const getCategoryTree = async (): Promise<ProductCategory[]> => {
-    const res = await axios.get("admin/category/tree");
-    return res.data.data;
+  const res = await axios.get("admin/category/tree");
+  return res.data.data;
 };
 
 // 新增类目
@@ -48,7 +48,7 @@ export const auditPass = async (data: {
   newCategoryId: string;
 }): Promise<void> => {
   await axios.put("admin/category/audit/pass", data);
-}
+};
 
 // 审核驳回
 export const auditReject = async (data: {
@@ -63,4 +63,11 @@ export const getAuditDetail = async (
   id: string,
 ): Promise<ProductCategoryAudit> => {
   return await axios.get(`admin/category/audit/detail?auditId=${id}`);
+};
+export const batchUpdateAuditSpuStatus = async (data: {
+  spuIds: string[];
+  auditStatus: 0 | 1 | 2;
+  auditRemark?: string;
+}) => {
+  await axios.put("product/batch/audit", data);
 };
