@@ -87,6 +87,7 @@ export async function applyShop(params: ShopInfo) {
 // 查询商家是否有店铺
 export async function findShop() {
   const res = await axios.get("findShop");
+  console.log("findShop", res.data.data);
     return res.data.data;
 }
   

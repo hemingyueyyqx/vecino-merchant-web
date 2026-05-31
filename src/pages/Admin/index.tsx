@@ -104,12 +104,12 @@ const Admin: React.FC = () => {
         },
         {
           key: "/admin/activity/audit",
-          label: <Link to="/admin/activity/audit">商家活动审核</Link>,
+          label: <Link to="/admin/activity/audit">商家优惠券审核</Link>,
         },
-        {
-          key: "/admin/activity/rule",
-          label: <Link to="/admin/activity/rule">违规营销监控</Link>,
-        },
+        // {
+        //   key: "/admin/activity/rule",
+        //   label: <Link to="/admin/activity/rule">违规营销监控</Link>,
+        // },
       ],
     },
     {
@@ -122,21 +122,21 @@ const Admin: React.FC = () => {
       icon: <SafetyOutlined />,
       label: <Link to="/admin/risk">风控反欺诈管理</Link>,
     },
-    {
-      key: "/admin/workorder",
-      icon: <FileDoneOutlined />,
-      label: <Link to="/admin/workorder">客服工单管理</Link>,
-    },
-    {
-      key: "/admin/finance",
-      icon: <WalletOutlined />,
-      label: <Link to="/admin/finance">财务管理</Link>,
-    },
-    {
-      key: "/admin/logistics",
-      icon: <TruckOutlined />,
-      label: <Link to="/admin/logistics">物流渠道管理</Link>,
-    },
+    // {
+    //   key: "/admin/workorder",
+    //   icon: <FileDoneOutlined />,
+    //   label: <Link to="/admin/workorder">客服工单管理</Link>,
+    // },
+    // {
+    //   key: "/admin/finance",
+    //   icon: <WalletOutlined />,
+    //   label: <Link to="/admin/finance">财务管理</Link>,
+    // },
+    // {
+    //   key: "/admin/logistics",
+    //   icon: <TruckOutlined />,
+    //   label: <Link to="/admin/logistics">物流渠道管理</Link>,
+    // },
   ];
 
   return (

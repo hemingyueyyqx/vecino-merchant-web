@@ -5,6 +5,7 @@ import type {
   ProductCategory,
   ProductCategoryAudit,
   AdminAuditParams,
+  ActivityConfigDTO,
 } from "@/types/product";
 
 // ============= 类目管理 =============
@@ -70,4 +71,37 @@ export const batchUpdateAuditSpuStatus = async (data: {
   auditRemark?: string;
 }) => {
   await axios.put("product/batch/audit", data);
+};
+// src/services/admin/index.ts - 添加优惠券审核接口
+
+// 批量审核优惠券
+export const batchAuditCoupon = async (data: {
+  couponIds: string[];
+  auditStatus: 0 | 1 | 2;
+  auditRemark?: string;
+}) => {
+  console.log("批量审核优惠券", data);
+  await axios.put("coupon/batch/audit", data);
+};
+/**
+ * AI 校验活动规则（千问大模型分析：商家适配、毛利、合规、风险）
+ * @param config 当前表单活动配置
+ */
+export const checkActivityRuleByAi = async(
+  config: ActivityConfigDTO
+) => {
+  console.log("AI校验活动规则", config);
+  const res = await axios.post("ai-check-rule", config);
+  return res.data.data;
+};
+
+/**
+ * 保存/创建平台活动
+ * @param data 活动完整配置
+ */
+export const createPlatformActivity = async(
+  data: ActivityConfigDTO
+) => {
+  console.log("创建平台活动", data);
+  await axios.post("create-activity", data);
 };

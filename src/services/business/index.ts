@@ -3,6 +3,7 @@ import type { MerchantShop } from "@/types/user";
 import type {
   ProductSpu,
   ProductSku,
+  Coupon,
 } from "@/types/product";
 
 /**
@@ -145,4 +146,41 @@ export const getReviewDetail = async () => {
   const res = await axios.get(`getReviewList`);
   console.log("评价详情", res.data.data);
   return res.data.data;
+};
+// src/services/business/index.ts - 添加优惠券相关接口
+
+// 获取优惠券列表
+export const getCouponList = async (params) => {
+  console.log("获取优惠券列表", params);
+  const res = await axios.post("coupon/list", params || {});
+  console.log("优惠券列表", res.data.data);
+  return res.data.data;
+};
+
+// 新增优惠券
+export const addCoupon = async (data: Coupon) => {
+  console.log("新增优惠券", data);
+  await axios.post("coupon/add", data);
+};
+
+// 编辑优惠券
+export const updateCoupon = async (data: Partial<Coupon>) => {
+  console.log("编辑优惠券", data);
+  await axios.put("coupon/update", data);
+};
+
+// 删除优惠券
+export const deleteCoupon = async (couponId: string) => {
+  console.log("删除优惠券", couponId);
+  await axios.delete(`coupon/delete?couponId=${couponId}`);
+};
+// src/services/business/index.ts - 添加批量更新优惠券状态接口
+
+// 批量更新优惠券状态（单个和批量都走这个接口）
+export const batchUpdateCouponStatus = async (data: {
+  couponIds: string[];
+  couponStatus: 0 | 1;
+}) => {
+  console.log("批量更新优惠券状态", data);
+  await axios.put("coupon/batch/status", data);
 };

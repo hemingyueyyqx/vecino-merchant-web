@@ -370,7 +370,11 @@ const MerchantHome = () => {
               title="消息中心"
               className="content-card equal-height-card"
               extra={
-                <Button type="link" icon={<BellOutlined />}>
+                <Button
+                  type="link"
+                  icon={<BellOutlined />}
+                  onClick={() => navigate("/business/message")}
+                >
                   查看全部
                 </Button>
               }

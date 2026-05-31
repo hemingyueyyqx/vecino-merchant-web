@@ -138,11 +138,11 @@ const Business: React.FC = () => {
       icon: <BarChartOutlined />,
       label: <Link to="/business/report">数据报表</Link>,
     },
-    {
-      key: "/business/fund",
-      icon: <WalletOutlined />,
-      label: <Link to="/business/fund">资金账户管理</Link>,
-    },
+    // {
+    //   key: "/business/fund",
+    //   icon: <WalletOutlined />,
+    //   label: <Link to="/business/fund">资金账户管理</Link>,
+    // },
     {
       key: "/business/shop",
       icon: <ShopOutlined />,

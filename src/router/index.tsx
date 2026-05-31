@@ -27,6 +27,14 @@ import ShopListPage from "@/components/customer/ShopListPage";
 import ShopDetailPageWrapper from "@/components/customer/ShopDetailPageWrapper";
 import OrderListPage from "@/components/customer/OrderList";
 import ProfilePage from "@/components/customer/Profile";
+import CouponAudit from "@/components/admin/CouponAudit";
+import ActivityCreatePage from "@/components/admin/ActivityCreatePage";
+import CustomerManage from "@/components/merchant/CustomerManage";
+import MassageCenter from "@/components/merchant/MassageCenter";
+import ShopManage from "@/components/merchant/ShopManage";
+import RiskFraudManagement from "@/components/admin/RiskFraudManagement";
+
+
 
 const router = createHashRouter([
   {
@@ -84,15 +92,15 @@ const router = createHashRouter([
             element: <PagePlaceholder title="订单管理 - 物流追踪" />,
           },
           { path: "marketing", element: <MarketingManagement /> },
-          { path: "customer", element: <PagePlaceholder title="客户管理" /> },
+          { path: "customer", element: <CustomerManage /> },
           {
             path: "aftersale",
             element: <ReviewManagement />,
           },
           { path: "report", element: <MerchantDataDashboard /> },
           { path: "fund", element: <PagePlaceholder title="资金账户管理" /> },
-          { path: "shop", element: <PagePlaceholder title="店铺管理" /> },
-          { path: "message", element: <PagePlaceholder title="消息中心" /> },
+          { path: "shop", element: <ShopManage /> },
+          { path: "message", element: <MassageCenter /> },
         ],
       },
       {
@@ -135,18 +143,18 @@ const router = createHashRouter([
           },
           {
             path: "activity/platform",
-            element: <PagePlaceholder title="营销活动管理 - 平台活动策划" />,
+            element: <ActivityCreatePage />,
           },
           {
             path: "activity/audit",
-            element: <PagePlaceholder title="营销活动管理 - 商家活动审核" />,
+            element: <CouponAudit />,
           },
           {
             path: "activity/rule",
             element: <PagePlaceholder title="营销活动管理 - 违规营销监控" />,
           },
           { path: "dashboard", element: <PlatformDataDashboard /> },
-          { path: "risk", element: <PagePlaceholder title="风控反欺诈管理" /> },
+          { path: "risk", element: <RiskFraudManagement /> },
           {
             path: "workorder",
             element: <PagePlaceholder title="客服工单管理" />,

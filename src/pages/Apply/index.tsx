@@ -307,6 +307,6 @@ const Apply = () => {
       </main>
     </div>
   );
-};;;;;;
+}
 
 export default Apply;

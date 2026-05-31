@@ -1,488 +1,600 @@
-import React, { useState, useRef, useEffect } from "react";
+// src/components/merchant/MarketingManagement.tsx
+import { useState, useEffect, useCallback } from "react";
 import {
-  Layout,
-  Tabs,
-  Card,
-  Form,
-  Input,
-  Select,
-  Button,
-  DatePicker,
   Table,
-
+  Button,
+  Input,
+  Space,
   message,
-  Statistic,
+  Modal,
+  Form,
+  Card,
+  Tag,
+  Select,
+  DatePicker,
   Row,
   Col,
-  Space,
-  Tag,
-
-  Modal,
-
-  Typography,
-  Divider,
-  Alert,
 } from "antd";
+import type { Key } from "react";
 import {
-
-  ExportOutlined,
-  CheckCircleOutlined,
+  SearchOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
+import type { Coupon } from "@/types/product";
+import {
+  getCouponList,
+  addCoupon,
+  updateCoupon,
+  deleteCoupon,
+  batchUpdateCouponStatus,
+} from "@/services/business";
 
-import type { TableProps } from "antd/es/table";
-import QRCode from "qrcode";
-import * as XLSX from "xlsx";
-import dayjs from "dayjs";
-
-const { Content, Sider } = Layout;
-const { TabPane } = Tabs;
-const { RangePicker } = DatePicker;
-const { Title, Text } = Typography;
-const { Option } = Select;
-
-// ==================== 类型定义 ====================
-// 优惠券类型
-type CouponType = "FULL_REDUCTION" | "DISCOUNT" | "NO_THRESHOLD";
-// 营销模块类型
-type MarketingModule = "coupon" | "discount" | "hot";
-// 商品类型
-interface ProductItem {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-}
-// 优惠券配置
-interface CouponConfig {
-  name: string;
-  type: CouponType;
-  fullAmount?: number;
-  reduceAmount?: number;
-  discount?: number;
-  totalCount: number;
-  validTime: [dayjs.Dayjs, dayjs.Dayjs];
-  applyScope: "ALL" | "PART";
-  productIds: string[];
-}
-// 数据统计
-interface CouponStats {
-  receiveCount: number;
-  useCount: number;
-  salesAmount: number;
-}
-
-// ==================== 模拟数据 ====================
-const mockProducts: ProductItem[] = [
-  { id: "1", name: "FOXUP粉底液30ml", price: 129, category: "彩妆" },
-  { id: "2", name: "橘朵高光修容盘10g", price: 59, category: "彩妆" },
-  { id: "3", name: "YSL纯口红4g", price: 380, category: "彩妆" },
-  { id: "4", name: "完美日记散粉8g", price: 79, category: "彩妆" },
-  { id: "5", name: "花西子蜜粉饼7g", price: 149, category: "彩妆" },
-];
-
-// ==================== 主组件 ====================
-const MarketingManagement: React.FC = () => {
-  const [form] = Form.useForm<CouponConfig>();
-  const qrRef = useRef<HTMLDivElement>(null);
-  const [activeModule, setActiveModule] = useState<MarketingModule>("coupon");
-  const [couponType, setCouponType] = useState<CouponType>("FULL_REDUCTION");
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [shareUrl, setShareUrl] = useState("");
-  const [stats, setStats] = useState<CouponStats>({
-    receiveCount: 128,
-    useCount: 45,
-    salesAmount: 6850,
-  });
-  const [loading, setLoading] = useState(false);
-  const [auditModal, setAuditModal] = useState(false);
-  const [errorTip, setErrorTip] = useState("");
-
-  // 生成二维码
-  useEffect(() => {
-    if (shareUrl && qrRef.current) {
-      QRCode.toCanvas(qrRef.current, shareUrl, { width: 120, margin: 1 });
-    }
-  }, [shareUrl]);
-
-  // 动态校验优惠券规则
-  const validateCouponRule = () => {
-    const values = form.getFieldsValue();
-    setErrorTip("");
-
-    if (values.type === "FULL_REDUCTION") {
-      if (!values.fullAmount || !values.reduceAmount) {
-        setErrorTip("满减券必须填写满减金额和优惠金额");
-        return false;
-      }
-      if (values.reduceAmount >= values.fullAmount) {
-        setErrorTip("违规设置：优惠金额不能大于等于满减门槛");
-        return false;
-      }
-    }
-
-    if (
-      values.type === "DISCOUNT" &&
-      (!values.discount || values.discount <= 0 || values.discount >= 10)
-    ) {
-      setErrorTip("折扣券必须填写1-10之间的折扣值");
-      return false;
-    }
-
-    if (values.applyScope === "PART" && selectedProducts.length === 0) {
-      setErrorTip("请选择适用的商品");
-      return false;
-    }
-
-    return true;
-  };
-
-  // 生成分享链接
-  const generateShareLink = () => {
-    if (!validateCouponRule()) return;
-    const link = `https://your-shop.com/coupon/${Date.now()}`;
-    setShareUrl(link);
-    message.success("分享链接与二维码生成成功");
-  };
-
-  // 提交审核
-  const submitAudit = () => {
-    if (!validateCouponRule()) return;
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setAuditModal(false);
-      message.success("营销活动已提交平台审核，等待管理员校验");
-    }, 1500);
-  };
-
-  // 刷新数据
-  const refreshStats = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setStats({
-        receiveCount: Math.floor(Math.random() * 200),
-        useCount: Math.floor(Math.random() * 100),
-        salesAmount: Math.floor(Math.random() * 10000),
-      });
-      setLoading(false);
-      message.success("数据刷新成功");
-    }, 1000);
-  };
-
-  // 导出Excel
-  const exportExcel = () => {
-    const data = [
-      ["指标", "数值"],
-      ["领取量", stats.receiveCount],
-      ["核销量", stats.useCount],
-      ["带动销售额", `¥${stats.salesAmount}`],
-      ["生成时间", dayjs().format("YYYY-MM-DD HH:mm:ss")],
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "优惠券数据");
-    XLSX.writeFile(wb, "优惠券统计数据.xlsx");
-    message.success("数据导出成功");
-  };
-
-  // 商品表格列
-  const productColumns: TableProps<ProductItem>["columns"] = [
-    { title: "商品名称", dataIndex: "name", key: "name" },
-    { title: "商品分类", dataIndex: "category", key: "category" },
-    { title: "售价(元)", dataIndex: "price", key: "price" },
-  ];
-
-  // 商品选择变化
-  const onProductSelect = (keys: string[]) => {
-    setSelectedProducts(keys);
-    form.setFieldValue("productIds", keys);
-  };
-
-  return (
-    <Layout style={{ minHeight: "100vh", background: "#f5f5f5" }}>
-      {/* 侧边栏 */}
-      {/* <Sider
-        width={200}
-        theme="light"
-        style={{ boxShadow: "1px 0 2px rgba(0,0,0,0.05)" }}
-      >
-        <div style={{ padding: 16, textAlign: "center" }}>
-          <Title level={5}>营销管理中心</Title>
-        </div>
-        <Tabs
-          activeKey={activeModule}
-          onChange={(v) => setActiveModule(v as MarketingModule)}
-          type="card"
-          vertical
-        >
-          <TabPane tab="优惠券管理" key="coupon" />
-          <TabPane tab="限时折扣" key="discount" />
-          <TabPane tab="热销推荐" key="hot" />
-        </Tabs>
-      </Sider> */}
-
-      {/* 主内容区 */}
-      <Layout>
-        <Content style={{ padding: 24 }}>
-          {/* <Title level={4}>营销活动配置</Title> */}
-          {/* <Divider /> */}
-
-          <Row gutter={24}>
-            {/* 左侧：优惠券配置区域 */}
-            <Col xs={24} lg={16}>
-              <Card title="优惠券核心配置" type="inner">
-                {errorTip && (
-                  <Alert
-                    message={errorTip}
-                    type="error"
-                    showIcon
-                    style={{ marginBottom: 16 }}
-                  />
-                )}
-
-                <Form
-                  form={form}
-                  layout="vertical"
-                  initialValues={{
-                    type: "FULL_REDUCTION",
-                    applyScope: "ALL",
-                    totalCount: 100,
-                  }}
-                >
-                  <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        label="优惠券名称"
-                        name="name"
-                        rules={[{ required: true, message: "请输入名称" }]}
-                      >
-                        <Input placeholder="例如：满200减50优惠券" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        label="优惠券类型"
-                        name="type"
-                        rules={[{ required: true }]}
-                      >
-                        <Select onChange={(v) => setCouponType(v)}>
-                          <Option value="FULL_REDUCTION">满减券</Option>
-                          <Option value="DISCOUNT">折扣券</Option>
-                          <Option value="NO_THRESHOLD">无门槛券</Option>
-                        </Select>
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
-                  {/* 动态配置项 */}
-                  {couponType === "FULL_REDUCTION" && (
-                    <Row gutter={16}>
-                      <Col xs={24} md={12}>
-                        <Form.Item
-                          label="满减门槛(元)"
-                          name="fullAmount"
-                          rules={[{ required: true }]}
-                        >
-                          <Input type="number" placeholder="满多少可用" />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} md={12}>
-                        <Form.Item
-                          label="优惠金额(元)"
-                          name="reduceAmount"
-                          rules={[{ required: true }]}
-                        >
-                          <Input type="number" placeholder="减多少钱" />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  )}
-
-                  {couponType === "DISCOUNT" && (
-                    <Form.Item
-                      label="折扣比例"
-                      name="discount"
-                      rules={[{ required: true }]}
-                    >
-                      <Input type="number" placeholder="例如：8.5折填写8.5" />
-                      <Text type="secondary">填写1-10之间数字，8.5折=8.5</Text>
-                    </Form.Item>
-                  )}
-
-                  <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        label="发放总数量"
-                        name="totalCount"
-                        rules={[{ required: true }]}
-                      >
-                        <Input type="number" placeholder="最多发放多少张" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        label="核销有效期"
-                        name="validTime"
-                        rules={[{ required: true }]}
-                      >
-                        <RangePicker showTime style={{ width: "100%" }} />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
-                  <Form.Item
-                    label="适用商品范围"
-                    name="applyScope"
-                    rules={[{ required: true }]}
-                  >
-                    <Select>
-                      <Option value="ALL">全部商品</Option>
-                      <Option value="PART">指定商品</Option>
-                    </Select>
-                  </Form.Item>
-
-                  {/* 批量选择商品 */}
-                  {form.getFieldValue("applyScope") === "PART" && (
-                    <Form.Item label="选择参与商品">
-                      <Table
-                        rowSelection={{
-                          selectedRowKeys: selectedProducts,
-                          onChange: onProductSelect,
-                        }}
-                        columns={productColumns}
-                        dataSource={mockProducts}
-                        rowKey="id"
-                        pagination={false}
-                        size="small"
-                      />
-                    </Form.Item>
-                  )}
-
-                  {/* 操作按钮 */}
-                  <Form.Item>
-                    <Space wrap>
-                      <Button type="primary" onClick={generateShareLink}>
-                        生成分享链接/二维码
-                      </Button>
-                      <Button
-                        onClick={() => setAuditModal(true)}
-                        icon={<CheckCircleOutlined />}
-                      >
-                        提交平台审核
-                      </Button>
-                      <Button danger onClick={() => form.resetFields()}>
-                        重置配置
-                      </Button>
-                    </Space>
-                  </Form.Item>
-                </Form>
-
-                {/* 分享区域 */}
-                {shareUrl && (
-                  <Card title="分享引流" type="inner" style={{ marginTop: 16 }}>
-                    <Space direction="vertical" style={{ width: "100%" }}>
-                      <div>
-                        分享链接：<Text copyable>{shareUrl}</Text>
-                      </div>
-                      <div ref={qrRef} style={{ marginTop: 8 }} />
-                      <Text type="secondary">
-                        扫码或复制链接分享至社交平台引流
-                      </Text>
-                    </Space>
-                  </Card>
-                )}
-              </Card>
-            </Col>
-
-            {/* 右侧：数据统计看板 */}
-            <Col xs={24} lg={8}>
-              <Card
-                title="优惠券数据统计"
-                extra={
-                  <Space>
-                    <Button
-                      icon={<ExportOutlined />}
-                      loading={loading}
-                      onClick={refreshStats}
-                      size="small"
-                    />
-                    <Button
-                      icon={<ExportOutlined />}
-                      onClick={exportExcel}
-                      size="small"
-                    >
-                      导出
-                    </Button>
-                  </Space>
-                }
-              >
-                <Space
-                  direction="vertical"
-                  size="large"
-                  style={{ width: "100%" }}
-                >
-                  <Statistic
-                    title="累计领取量"
-                    value={stats.receiveCount}
-                    suffix="张"
-                  />
-                  <Statistic
-                    title="累计核销量"
-                    value={stats.useCount}
-                    suffix="张"
-                  />
-                  <Statistic
-                    title="带动销售额"
-                    value={stats.salesAmount}
-                    prefix="¥"
-                  />
-                </Space>
-                <Divider />
-                <div style={{ textAlign: "center" }}>
-                  <Tag color="blue">实时更新</Tag>
-                  <Text type="secondary" style={{ marginLeft: 8 }}>
-                    数据每5分钟自动同步
-                  </Text>
-                </div>
-              </Card>
-
-              <Card title="平台规则提示" style={{ marginTop: 16 }}>
-                <Alert
-                  message="审核规范"
-                  description="1. 优惠金额不得虚高 2. 有效期不得超过1年 3. 适用商品必须真实在售 4. 违规活动将自动驳回"
-                  type="info"
-                  showIcon
-                />
-              </Card>
-            </Col>
-          </Row>
-        </Content>
-      </Layout>
-
-      {/* 提交审核弹窗 */}
-      <Modal
-        title="提交平台审核"
-        open={auditModal}
-        onCancel={() => setAuditModal(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setAuditModal(false)}>
-            取消
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={loading}
-            onClick={submitAudit}
-          >
-            确认提交
-          </Button>,
-        ]}
-      >
-        <p>确认将当前优惠券活动提交平台审核吗？</p>
-        <Text type="secondary">管理员将在1-3个工作日内完成合规性校验</Text>
-      </Modal>
-    </Layout>
-  );
+// 优惠券状态枚举
+const COUPON_STATUS = {
+  0: { text: "禁用", color: "red" },
+  1: { text: "启用", color: "green" },
 };
 
-export default MarketingManagement;
+// 审核状态枚举
+const AUDIT_STATUS = {
+  0: { text: "待审核", color: "orange" },
+  1: { text: "审核通过", color: "green" },
+  2: { text: "审核拒绝", color: "red" },
+};
+
+// 优惠券类型枚举
+const COUPON_TYPE = {
+  0: { text: "满减券", color: "blue" },
+  1: { text: "无门槛券", color: "purple" },
+};
+
+export default function MarketingManagement() {
+  const [form] = Form.useForm();
+  const [couponForm] = Form.useForm();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [couponList, setCouponList] = useState<Coupon[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
+
+  // 弹窗状态
+  const [detailModal, setDetailModal] = useState<boolean>(false);
+  const [createModal, setCreateModal] = useState<boolean>(false);
+  const [editModal, setEditModal] = useState<boolean>(false);
+
+  // 当前操作的优惠券
+  const [currentCoupon, setCurrentCoupon] = useState<Coupon | null>(null);
+  const [couponType, setCouponType] = useState<0 | 1>(0);
+
+  // 获取优惠券列表
+  const fetchList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { couponName, couponStatus, auditStatus } = form.getFieldsValue();
+      const params: any = {};
+      if (couponName) params.couponName = couponName;
+      if (couponStatus !== undefined && couponStatus !== null)
+        params.couponStatus = couponStatus;
+      if (auditStatus !== undefined && auditStatus !== null)
+        params.auditStatus = auditStatus;
+
+      const res = await getCouponList(params);
+      setCouponList(res || []);
+    } catch (err) {
+      console.error("获取优惠券列表失败", err);
+      message.error("获取优惠券列表失败");
+    } finally {
+      setLoading(false);
+    }
+  }, [form]);
+
+  // 查看详情
+  const handleViewDetail = (coupon: Coupon) => {
+    setCurrentCoupon(coupon);
+    setDetailModal(true);
+  };
+
+  // 打开创建弹窗
+  const handleOpenCreate = () => {
+    couponForm.resetFields();
+    setCouponType(0);
+    setCreateModal(true);
+  };
+
+  // 打开编辑弹窗
+  const handleOpenEdit = (coupon: Coupon) => {
+    setCurrentCoupon(coupon);
+    setCouponType(coupon.couponType || 0);
+    couponForm.setFieldsValue({
+      couponName: coupon.couponName,
+      couponType: coupon.couponType,
+      fullAmount: coupon.fullAmount,
+      reduceAmount: coupon.reduceAmount,
+      wmkAmount: coupon.wwmkAmount,
+      totalCount: coupon.totalCount,
+      startTime: coupon.startTime ? new Date(coupon.startTime) : null,
+      endTime: coupon.endTime ? new Date(coupon.endTime) : null,
+    });
+    setEditModal(true);
+  };
+
+  // 删除优惠券
+  const handleDelete = (coupon: Coupon) => {
+    Modal.confirm({
+      title: "删除优惠券",
+      content: `确定要删除优惠券「${coupon.couponName}」吗？`,
+      onOk: async () => {
+        try {
+          await deleteCoupon(coupon.couponId!);
+          message.success("删除成功");
+          fetchList();
+        } catch (err) {
+          message.error("删除失败");
+        }
+      },
+    });
+  };
+
+  // 提交创建
+  const handleSubmitCreate = async () => {
+    try {
+      const values = await couponForm.validateFields();
+      const couponData: Coupon = {
+        couponName: values.couponName,
+        couponType: values.couponType,
+        fullAmount: values.couponType === 0 ? values.fullAmount : undefined,
+        reduceAmount: values.couponType === 0 ? values.reduceAmount : undefined,
+        wwmkAmount: values.couponType === 1 ? values.wmkAmount : undefined,
+        totalCount: values.totalCount,
+        startTime: values.startTime
+          ? values.startTime.toISOString()
+          : undefined,
+        endTime: values.endTime ? values.endTime.toISOString() : undefined,
+        couponStatus: 0,
+        auditStatus: 0,
+      };
+      await addCoupon(couponData);
+      message.success("创建成功");
+      setCreateModal(false);
+      fetchList();
+    } catch (err) {
+      message.error("创建失败");
+    }
+  };
+
+  // 提交编辑
+  const handleSubmitEdit = async () => {
+    try {
+      const values = await couponForm.validateFields();
+      const couponData: Coupon = {
+        couponId: currentCoupon?.couponId,
+        couponName: values.couponName,
+        couponType: values.couponType,
+        fullAmount: values.couponType === 0 ? values.fullAmount : undefined,
+        reduceAmount: values.couponType === 0 ? values.reduceAmount : undefined,
+        wwmkAmount: values.couponType === 1 ? values.wmkAmount : undefined,
+        totalCount: values.totalCount,
+        startTime: values.startTime
+          ? values.startTime.toISOString()
+          : undefined,
+        endTime: values.endTime ? values.endTime.toISOString() : undefined,
+      };
+      await updateCoupon(couponData);
+      message.success("编辑成功");
+      setEditModal(false);
+      fetchList();
+    } catch (err) {
+      message.error("编辑失败");
+    }
+  };
+
+  // 切换优惠券状态（单个操作也走批量接口）
+  const handleToggleStatus = async (coupon: Coupon) => {
+    // 检查是否已审核通过
+    if (coupon.auditStatus !== 1) {
+      message.warning("只有审核通过的优惠券才能启用/禁用");
+      return;
+    }
+
+    const newStatus = coupon.couponStatus === 1 ? 0 : 1;
+    try {
+      await batchUpdateCouponStatus({
+        couponIds: [coupon.couponId!],
+        couponStatus: newStatus,
+      });
+      message.success(`${newStatus === 1 ? "启用" : "禁用"}成功`);
+      fetchList();
+    } catch (err) {
+      message.error("操作失败");
+    }
+  };
+
+  // 批量启用/禁用
+  const handleBatchToggleStatus = async (status: 0 | 1) => {
+    if (selectedRowKeys.length === 0) {
+      message.warning("请选择需要操作的优惠券");
+      return;
+    }
+
+    // 获取选中的优惠券
+    const selectedCoupons = couponList.filter((coupon) =>
+      selectedRowKeys.includes(coupon.couponId!),
+    );
+
+    // 检查是否所有选中的优惠券都已审核通过
+    const notAudited = selectedCoupons.filter(
+      (coupon) => coupon.auditStatus !== 1,
+    );
+    if (notAudited.length > 0) {
+      message.warning(`有 ${notAudited.length} 个优惠券未审核通过，无法操作`);
+      return;
+    }
+
+    // 批量启用时，检查是否所有选中的优惠券都是禁用状态
+    if (status === 1) {
+      const notDisabled = selectedCoupons.filter(
+        (coupon) => coupon.couponStatus !== 0,
+      );
+      if (notDisabled.length > 0) {
+        message.warning(`有 ${notDisabled.length} 个优惠券已经是启用状态`);
+        return;
+      }
+    }
+
+    // 批量禁用时，检查是否所有选中的优惠券都是启用状态
+    if (status === 0) {
+      const notEnabled = selectedCoupons.filter(
+        (coupon) => coupon.couponStatus !== 1,
+      );
+      if (notEnabled.length > 0) {
+        message.warning(`有 ${notEnabled.length} 个优惠券已经是禁用状态`);
+        return;
+      }
+    }
+
+    Modal.confirm({
+      title: status === 1 ? "批量启用" : "批量禁用",
+      content: `确定要${status === 1 ? "启用" : "禁用"}选中的 ${selectedRowKeys.length} 个优惠券吗？`,
+      onOk: async () => {
+        try {
+          await batchUpdateCouponStatus({
+            couponIds: selectedRowKeys.map((key) => String(key)),
+            couponStatus: status,
+          });
+          message.success(`批量${status === 1 ? "启用" : "禁用"}成功`);
+          fetchList();
+          setSelectedRowKeys([]);
+        } catch (err) {
+          message.error("操作失败");
+        }
+      },
+    });
+  };
+
+  useEffect(() => {
+    fetchList();
+  }, [fetchList]);
+
+  // 判断批量操作按钮是否可用
+  const selectedCoupons = couponList.filter((coupon) =>
+    selectedRowKeys.includes(coupon.couponId!),
+  );
+  const canBatchEnable =
+    selectedRowKeys.length > 0 &&
+    selectedCoupons.every(
+      (coupon) => coupon.auditStatus === 1 && coupon.couponStatus === 0,
+    );
+  const canBatchDisable =
+    selectedRowKeys.length > 0 &&
+    selectedCoupons.every(
+      (coupon) => coupon.auditStatus === 1 && coupon.couponStatus === 1,
+    );
+
+  // 表格列定义
+  const columns = [
+    { title: "优惠券名称", dataIndex: "couponName" },
+    {
+      title: "优惠券类型",
+      dataIndex: "couponType",
+      render: (type: 0 | 1) => (
+        <Tag color={COUPON_TYPE[type].color}>{COUPON_TYPE[type].text}</Tag>
+      ),
+    },
+    {
+      title: "优惠信息",
+      dataIndex: "couponType",
+      render: (type: 0 | 1, record: Coupon) => {
+        if (type === 0) {
+          return `满${record.fullAmount}减${record.reduceAmount}`;
+        } else {
+          return `无门槛减${record.wwmkAmount}`;
+        }
+      },
+    },
+    { title: "发放数量", dataIndex: "totalCount" },
+    {
+      title: "优惠券状态",
+      dataIndex: "couponStatus",
+      render: (status: 0 | 1) => (
+        <Tag color={COUPON_STATUS[status].color}>
+          {COUPON_STATUS[status].text}
+        </Tag>
+      ),
+    },
+    {
+      title: "审核状态",
+      dataIndex: "auditStatus",
+      render: (status: 0 | 1 | 2) => (
+        <Tag color={AUDIT_STATUS[status].color}>
+          {AUDIT_STATUS[status].text}
+        </Tag>
+      ),
+    },
+    {
+      title: "有效期",
+      render: (_, record: Coupon) => {
+        const start = record.startTime?.split("T")[0] || "-";
+        const end = record.endTime?.split("T")[0] || "-";
+        return `${start} ~ ${end}`;
+      },
+    },
+    {
+      title: "创建时间",
+      dataIndex: "createTime",
+      render: (time: string) => time?.split("T")[0] || "-",
+    },
+    {
+      title: "操作",
+      render: (_: unknown, record: Coupon) => (
+        <Space size="small">
+          <Button type="link" onClick={() => handleViewDetail(record)}>
+            <EyeOutlined />
+            查看
+          </Button>
+          {record.auditStatus === 1 && (
+            <Button type="link" onClick={() => handleOpenEdit(record)}>
+              <EditOutlined />
+              编辑
+            </Button>
+          )}
+          {record.auditStatus === 0 && (
+            <Button type="link" danger onClick={() => handleDelete(record)}>
+              <DeleteOutlined />
+              删除
+            </Button>
+          )}
+          {record.auditStatus === 1 && (
+            <Button type="link" onClick={() => handleToggleStatus(record)}>
+              {record.couponStatus === 1 ? "禁用" : "启用"}
+            </Button>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <div style={{ padding: 20 }}>
+      {/* 搜索筛选栏 */}
+      <Form form={form} layout="inline" style={{ marginBottom: 20 }}>
+        <Form.Item name="couponName">
+          <Input placeholder="优惠券名称搜索" />
+        </Form.Item>
+        <Form.Item name="couponStatus" label="优惠券状态">
+          <Select placeholder="全部" style={{ width: 120 }} allowClear>
+            <Select.Option value={0}>禁用</Select.Option>
+            <Select.Option value={1}>启用</Select.Option>
+          </Select>
+        </Form.Item>
+        <Form.Item name="auditStatus" label="审核状态">
+          <Select placeholder="全部" style={{ width: 120 }} allowClear>
+            <Select.Option value={0}>待审核</Select.Option>
+            <Select.Option value={1}>审核通过</Select.Option>
+            <Select.Option value={2}>审核拒绝</Select.Option>
+          </Select>
+        </Form.Item>
+        <Form.Item>
+          <Button type="primary" icon={<SearchOutlined />} onClick={fetchList}>
+            查询
+          </Button>
+        </Form.Item>
+        <Form.Item>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleOpenCreate}
+          >
+            新增优惠券
+          </Button>
+        </Form.Item>
+      </Form>
+
+      {/* 批量操作按钮 */}
+      <Space style={{ marginBottom: 15 }}>
+        <Button
+          type="primary"
+          onClick={() => handleBatchToggleStatus(1)}
+          disabled={!canBatchEnable}
+        >
+          批量启用
+        </Button>
+        <Button
+          danger
+          onClick={() => handleBatchToggleStatus(0)}
+          disabled={!canBatchDisable}
+        >
+          批量禁用
+        </Button>
+      </Space>
+
+      {/* 优惠券列表表格 */}
+      <Table
+        rowKey="couponId"
+        loading={loading}
+        columns={columns}
+        dataSource={couponList}
+        pagination={false}
+        rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
+      />
+
+      {/* 详情弹窗 */}
+      <Modal
+        open={detailModal}
+        title="优惠券详情"
+        onCancel={() => setDetailModal(false)}
+        footer={null}
+        width={600}
+      >
+        {currentCoupon && (
+          <Card>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <p>
+                  <b>优惠券名称：</b>
+                  {currentCoupon.couponName}
+                </p>
+                <p>
+                  <b>优惠券类型：</b>
+                  <Tag color={COUPON_TYPE[currentCoupon.couponType || 0].color}>
+                    {COUPON_TYPE[currentCoupon.couponType || 0].text}
+                  </Tag>
+                </p>
+                <p>
+                  <b>优惠信息：</b>
+                  {currentCoupon.couponType === 0
+                    ? `满${currentCoupon.fullAmount}减${currentCoupon.reduceAmount}`
+                    : `无门槛减${currentCoupon.wwmkAmount}`}
+                </p>
+              </Col>
+              <Col span={12}>
+                <p>
+                  <b>发放数量：</b>
+                  {currentCoupon.totalCount}
+                </p>
+                <p>
+                  <b>优惠券状态：</b>
+                  <Tag
+                    color={COUPON_STATUS[currentCoupon.couponStatus || 0].color}
+                  >
+                    {COUPON_STATUS[currentCoupon.couponStatus || 0].text}
+                  </Tag>
+                </p>
+                <p>
+                  <b>审核状态：</b>
+                  <Tag
+                    color={AUDIT_STATUS[currentCoupon.auditStatus || 0].color}
+                  >
+                    {AUDIT_STATUS[currentCoupon.auditStatus || 0].text}
+                  </Tag>
+                </p>
+              </Col>
+            </Row>
+            <div style={{ marginTop: 20 }}>
+              <p>
+                <b>有效期：</b>
+                {(currentCoupon.startTime?.split("T")[0] || "-") +
+                  " ~ " +
+                  (currentCoupon.endTime?.split("T")[0] || "-")}
+              </p>
+              <p>
+                <b>创建时间：</b>
+                {currentCoupon.createTime?.split("T")[0] || "-"}
+              </p>
+            </div>
+          </Card>
+        )}
+      </Modal>
+
+      {/* 创建/编辑弹窗 */}
+      <Modal
+        open={createModal || editModal}
+        title={createModal ? "新增优惠券" : "编辑优惠券"}
+        onCancel={() => {
+          setCreateModal(false);
+          setEditModal(false);
+        }}
+        onOk={createModal ? handleSubmitCreate : handleSubmitEdit}
+        confirmLoading={loading}
+        width={500}
+      >
+        <Form form={couponForm} layout="vertical">
+          <Form.Item
+            name="couponName"
+            label="优惠券名称"
+            rules={[{ required: true, message: "请输入优惠券名称" }]}
+          >
+            <Input placeholder="请输入优惠券名称" />
+          </Form.Item>
+
+          <Form.Item
+            name="couponType"
+            label="优惠券类型"
+            rules={[{ required: true, message: "请选择优惠券类型" }]}
+          >
+            <Select
+              placeholder="请选择优惠券类型"
+              onChange={(value) => setCouponType(value)}
+            >
+              <Select.Option value={0}>满减券</Select.Option>
+              <Select.Option value={1}>无门槛券</Select.Option>
+            </Select>
+          </Form.Item>
+
+          {couponType === 0 && (
+            <>
+              <Form.Item
+                name="fullAmount"
+                label="满减金额"
+                rules={[{ required: true, message: "请输入满减金额" }]}
+              >
+                <Input type="number" placeholder="满多少元" />
+              </Form.Item>
+              <Form.Item
+                name="reduceAmount"
+                label="减免金额"
+                rules={[{ required: true, message: "请输入减免金额" }]}
+              >
+                <Input type="number" placeholder="减多少元" />
+              </Form.Item>
+            </>
+          )}
+
+          {couponType === 1 && (
+            <Form.Item
+              name="wmkAmount"
+              label="无门槛减免金额"
+              rules={[{ required: true, message: "请输入无门槛减免金额" }]}
+            >
+              <Input type="number" placeholder="无门槛减多少元" />
+            </Form.Item>
+          )}
+
+          <Form.Item
+            name="totalCount"
+            label="发放数量"
+            rules={[{ required: true, message: "请输入发放数量" }]}
+          >
+            <Input type="number" placeholder="请输入发放数量" />
+          </Form.Item>
+
+          <Form.Item
+            name="startTime"
+            label="开始时间"
+            rules={[{ required: true, message: "请选择开始时间" }]}
+          >
+            <DatePicker showTime placeholder="请选择开始时间" />
+          </Form.Item>
+
+          <Form.Item
+            name="endTime"
+            label="结束时间"
+            rules={[{ required: true, message: "请选择结束时间" }]}
+          >
+            <DatePicker showTime placeholder="请选择结束时间" />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+}
